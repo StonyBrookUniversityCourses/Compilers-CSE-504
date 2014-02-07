@@ -43,6 +43,7 @@ NEWLINE \n\r|\n|\r
  				yyfilename = filename;
  				yylinenum = yylinenum-1;
 			}
+"\""(.*("\\\"")?.*)*"\"" 	{printf("%s",yytext); yylval.cVal = yytext; return TOK_STRCONST;}
  /**************** Recognize operators ****************/
 
 ":"	{ return TOK_COLON; }
