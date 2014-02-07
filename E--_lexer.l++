@@ -15,6 +15,10 @@ int yylinenum=0;
 
 DECIMAL_DIGIT  [0-9]
 UINTNUM		   {DECIMAL_DIGIT}+
+LOWER_CASECHARS	[a-z]
+UPPER_CASECHARS	[A-Z]
+UNDERSCORE "_"
+LETTER ({LOWER_CASECHARS}|{UPPER_CASECHARS})
 
 %%
 
@@ -82,6 +86,7 @@ UINTNUM		   {DECIMAL_DIGIT}+
 "void"		{ return TOK_VOID; }
 
 
+({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{return TOK_ID;}
  /**************** Unrecognized character ==> error ****************/
 
 . {
