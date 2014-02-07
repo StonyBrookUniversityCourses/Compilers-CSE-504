@@ -26,58 +26,57 @@ NEWLINE \n\r|\n|\r
 {NEWLINE} 		{yylinenum++;}
 \t|" "			{/*No ACTION*/}
 "# "({DECIMAL_DIGIT}+).*  {
- 							yylinenum = 0;
- 							int i= 2;
- 							for(;yytext[i]!=' ';i++) {
- 								yylinenum = yylinenum*10 + (int)yytext[i] - 48;
- 							}
- 							int startPos = i+2;
- 							for(i=i+2;yytext[i]!='"';i++) {
-
- 							}
- 							int endPos = i-1;
- 							char* filename = new char[endPos-startPos+1];
- 							for(i=startPos;i<=endPos;i++) {
- 								filename[i-startPos] = yytext[i];
- 							}
- 							filename[i-startPos] = '\0';
- 							yyfilename = filename;
- 							yylinenum = yylinenum-1;
-						  }
+				yylinenum = 0;
+ 				int i= 2;
+ 				for(;yytext[i]!=' ';i++) {
+ 					yylinenum = yylinenum*10 + (int)yytext[i] - 48;
+ 				}
+ 				int startPos = i+2;
+ 				for(i=i+2;yytext[i]!='"';i++) {
+				}
+				int endPos = i-1;
+				char* filename = new char[endPos-startPos+1];
+ 				for(i=startPos;i<=endPos;i++) {
+ 					filename[i-startPos] = yytext[i];
+ 				}
+ 				filename[i-startPos] = '\0';
+ 				yyfilename = filename;
+ 				yylinenum = yylinenum-1;
+			}
  /**************** Recognize operators ****************/
 
-":"		{ return TOK_COLON; }
-","		{ return TOK_COMMA; }
-"."		{ return TOK_DOT; }
-";"		{ return TOK_SEMICOLON; }
-"["		{ return TOK_LBRACK; }
-"]"		{ return TOK_RBRACK; }
-"("		{ return TOK_LPAREN; }
-")"		{ return TOK_RPAREN; }
-"{"		{ return TOK_LBRACE; }
-"}"		{ return TOK_RBRACE; }
-"+"		{ return TOK_PLUS; }
-"-"		{ return TOK_MINUS; }
-"*"		{ return TOK_MULT; }
-"/"		{ return TOK_DIV; }
-"="		{ return TOK_ASSIGN; }
+":"	{ return TOK_COLON; }
+","	{ return TOK_COMMA; }
+"."	{ return TOK_DOT; }
+";"	{ return TOK_SEMICOLON; }
+"["	{ return TOK_LBRACK; }
+"]"	{ return TOK_RBRACK; }
+"("	{ return TOK_LPAREN; }
+")"	{ return TOK_RPAREN; }
+"{"	{ return TOK_LBRACE; }
+"}"	{ return TOK_RBRACE; }
+"+"	{ return TOK_PLUS; }
+"-"	{ return TOK_MINUS; }
+"*"	{ return TOK_MULT; }
+"/"	{ return TOK_DIV; }
+"="	{ return TOK_ASSIGN; }
 "&&"	{ return TOK_AND; }
 "||"	{ return TOK_OR; }
-"!"		{ return TOK_NOT; }
+"!"	{ return TOK_NOT; }
 "->"	{ return TOK_ARROW; }
-"?"		{ return TOK_QMARK; }
-">"		{ return TOK_GT; }
-"<"		{ return TOK_LT; }
+"?"	{ return TOK_QMARK; }
+">"	{ return TOK_GT; }
+"<"	{ return TOK_LT; }
 "=="	{ return TOK_EQ; }
 "!="	{ return TOK_NE; }
 ">="	{ return TOK_GE; }
 "<="	{ return TOK_LE; }
-"%"		{ return TOK_MOD; }
+"%"	{ return TOK_MOD; }
 "\\/"	{ return TOK_PAT_OR; }
-"&"		{ return TOK_BITAND; }
-"|"		{ return TOK_BITOR; }
-"~"		{ return TOK_BITNOT; }
-"^"		{ return TOK_BITXOR; }
+"&"	{ return TOK_BITAND; }
+"|"	{ return TOK_BITOR; }
+"~"	{ return TOK_BITNOT; }
+"^"	{ return TOK_BITXOR; }
 ">>"	{ return TOK_SHR; }
 "<<"	{ return TOK_SHL; }
 
@@ -108,10 +107,9 @@ NEWLINE \n\r|\n|\r
 "void"		{ return TOK_VOID; }
 
 {UINTNUM}	{ 
-				yylval.uVal = atoi(yytext);
-				return TOK_UINTNUM;
-			}
-
+			yylval.uVal = atoi(yytext);
+			return TOK_UINTNUM;
+		}
 
 "."((e|E)("+"|"-")?{UINTNUM})?	{return TOK_SYNTAX_ERROR;}
 
