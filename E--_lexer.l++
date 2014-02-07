@@ -8,7 +8,7 @@
 using namespace std;
 
 const char* yyfilename="";
-int yylinenum=0;
+int yylinenum=1;
 
 %}
 /* Definitions */
@@ -20,8 +20,30 @@ UPPER_CASECHARS	[A-Z]
 UNDERSCORE "_"
 LETTER ({LOWER_CASECHARS}|{UPPER_CASECHARS})
 
-%%
+NEWLINE \n\r|\n|\r
 
+%%
+{NEWLINE} 		{yylinenum++;}
+\t|" "			{/*No ACTION*/}
+"# "({DECIMAL_DIGIT}+).*  {
+ 							yylinenum = 0;
+ 							int i= 2;
+ 							for(;yytext[i]!=' ';i++) {
+ 								yylinenum = yylinenum*10 + (int)yytext[i] - 48;
+ 							}
+ 							int startPos = i+2;
+ 							for(i=i+2;yytext[i]!='"';i++) {
+
+ 							}
+ 							int endPos = i-1;
+ 							char* filename = new char[endPos-startPos+1];
+ 							for(i=startPos;i<=endPos;i++) {
+ 								filename[i-startPos] = yytext[i];
+ 							}
+ 							filename[i-startPos] = '\0';
+ 							yyfilename = filename;
+ 							yylinenum = yylinenum-1;
+						  }
  /**************** Recognize operators ****************/
 
 ":"		{ return TOK_COLON; }
@@ -85,8 +107,17 @@ LETTER ({LOWER_CASECHARS}|{UPPER_CASECHARS})
 "true"		{ return TOK_TRUE; }
 "void"		{ return TOK_VOID; }
 
+{UINTNUM}	{ 
+				yylval.uVal = atoi(yytext);
+				return TOK_UINTNUM;
+			}
 
-({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{return TOK_ID;}
+
+"."((e|E)("+"|"-")?{UINTNUM})?	{return TOK_SYNTAX_ERROR;}
+
+({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})?	{return TOK_DOUBLENUM;}
+
+({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{yylval.cVal = yytext;return TOK_ID;}
  /**************** Unrecognized character ==> error ****************/
 
 . {
