@@ -44,41 +44,40 @@ NEWLINE \n\r|\n|\r
  				yylinenum = yylinenum-1;
 			}
 "\""([^"\""]*("\\\"")?[^"\""]*(\n)?)*?"\"" 	{
-								//printf("%s\n",yytext);
-								int j = 0;
-								char* str = new char[yyleng-2];
-								for(int i=1;i<yyleng - 1;i++,j++){
-									char ch = yytext[i];
-									if(ch == '\n'){
-										break;
-									}
-									if(ch == '\\') {
-										i++;
-										switch(yytext[i]){
-											case 'n' : ch = '\n';
-													    break;
-											case 't' : ch = '\t';
-													    break;
-											case 'r' : ch = '\n';
-													    break;
-											case '"' : ch = '"';
-													    break;
-											case '\\' : ch = '\\';
-													    break;
-											case 'x' : {
-														int firstHexa = (yytext[++i] - 48);
-													   	int secondHexa = (yytext[++i] - 48);
-													   	ch = firstHexa*16 + secondHexa;
-													   	break;
-													   }
-											default : i--;
-										}
-									}
-									str[j] = ch;
+						 int j = 0;
+						 char* str = new char[yyleng-2];
+						 for(int i=1;i<yyleng - 1;i++,j++){
+						 char ch = yytext[i];
+						 if(ch == '\n'){
+						   break;
+						 }
+						 if(ch == '\\') {
+						   i++;
+						   switch(yytext[i]){
+						     case 'n' : ch = '\n';
+						                break;
+						     case 't' : ch = '\t';
+						                break;
+						     case 'r' : ch = '\n';
+						                break;
+					   	     case '"' : ch = '"';
+							        break;
+						     case '\\' : ch = '\\';
+						  	         break;
+						     case 'x' : {
+						   	    	 int firstHexa = (yytext[++i] - 48);
+								 int secondHexa = (yytext[++i] - 48);
+								 ch = firstHexa*16 + secondHexa;
+								 break;
 								}
-								str[j] = '\0';
-								yylval.cVal = str; 
-								return TOK_STRCONST;
+						     default : i--;
+						    }
+						}
+					        str[j] = ch;
+					       }
+					       str[j] = '\0';
+					       yylval.cVal = str; 
+					       return TOK_STRCONST;
 							}
  /**************** Recognize operators ****************/
 
