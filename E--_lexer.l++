@@ -9,6 +9,7 @@ using namespace std;
 
 const char* yyfilename="";
 int yylinenum=1;
+int convertToHexa(char ch);
 
 %}
 /* Definitions */
@@ -65,8 +66,8 @@ NEWLINE \n\r|\n|\r
 						     case '\\' : ch = '\\';
 						  	         break;
 						     case 'x' : {
-						   	    	 int firstHexa = (yytext[++i] - 48);
-								 int secondHexa = (yytext[++i] - 48);
+						   	    	 int firstHexa = convertToHexa(yytext[++i]);
+								 int secondHexa = convertToHexa(yytext[++i]);
 								 ch = firstHexa*16 + secondHexa;
 								 break;
 								}
@@ -159,3 +160,12 @@ NEWLINE \n\r|\n|\r
 }
 
 %%
+
+int convertToHexa(char ch){
+	if(ch>=97)
+		return ch - 97;
+	else if(ch>=65)
+		return ch - 65;
+	else if(ch>=48)
+		return ch - 48;
+}
