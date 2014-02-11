@@ -158,7 +158,7 @@ NEWLINE \n\r|\n|\r
 
 "."((e|E)("+"|"-")?{UINTNUM})?	{yyless(1);return TOK_DOT;}
 
-({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})?	{yylval.dVal = atof(yytext);return TOK_DOUBLENUM;}
+({DECIMAL_DIGIT}*)"."?({DECIMAL_DIGIT}+)|({DECIMAL_DIGIT}*)({DECIMAL_DIGIT}+|"."{DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})	{yylval.dVal = atof(yytext);return TOK_DOUBLENUM;}
 
 ({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{yylval.cVal = yytext;return TOK_ID;}
  /**************** Unrecognized character ==> error ****************/
