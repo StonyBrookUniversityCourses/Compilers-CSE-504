@@ -18,6 +18,7 @@ DECIMAL_DIGIT  [0-9]
 UINTNUM		   {DECIMAL_DIGIT}+
 LOWER_CASECHARS	[a-z]
 UPPER_CASECHARS	[A-Z]
+HEX 	[0-9A-Fa-f]
 UNDERSCORE "_"
 LETTER ({LOWER_CASECHARS}|{UPPER_CASECHARS})
 
@@ -33,7 +34,10 @@ NEWLINE \n\r|\n|\r
  					yylinenum = yylinenum*10 + (int)yytext[i] - 48;
  				}
  				int startPos = i+2;
- 				for(i=i+2;yytext[i]!='"';i++) {
+ 				for(i=i+2;yytext[i]!='"'&&yytext[i-1]!='\\';i++) {
+	 				if(yytext[i] == '/'){
+	 					startPos = i+1;
+	 				}
 				}
 				int endPos = i-1;
 				char* filename = new char[endPos-startPos+1];
@@ -44,12 +48,12 @@ NEWLINE \n\r|\n|\r
  				yyfilename = filename;
  				yylinenum = yylinenum-1;
 			}
-"\""([^"\""]*("\\\"")?[^"\""]*(\n)?)*?"\"" 	{
+"\""([^"\""\n]|("\\\""))*?("\""|\n) 	{
 						 int j = 0;
 						 char* str = new char[yyleng-2];
-						 for(int i=1;i<yyleng - 1;i++,j++){
+						 for(int i=1;i<yyleng;i++,j++){
 						 char ch = yytext[i];
-						 if(ch == '\n'){
+						 if(ch == '\n' || ch == '"'){
 						   break;
 						 }
 						 if(ch == '\\') {
@@ -147,10 +151,14 @@ NEWLINE \n\r|\n|\r
 			yylval.uVal = atoi(yytext);
 			return TOK_UINTNUM;
 		}
+0(x|X){HEX}{1,4} {
+			yylval.uVal = strtol(yytext,NULL,16);
+			return TOK_UINTNUM;
+}
 
 "."((e|E)("+"|"-")?{UINTNUM})?	{return TOK_SYNTAX_ERROR;}
 
-({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})?	{return TOK_DOUBLENUM;}
+({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})?	{yylval.dVal = atof(yytext);return TOK_DOUBLENUM;}
 
 ({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{yylval.cVal = yytext;return TOK_ID;}
  /**************** Unrecognized character ==> error ****************/
