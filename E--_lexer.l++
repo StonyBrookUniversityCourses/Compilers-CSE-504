@@ -148,7 +148,7 @@ NEWLINE \n\r|\n|\r
 "void"		{ return TOK_VOID; }
 
 {UINTNUM}	{ 
-			yylval.uVal = atoi(yytext);
+			yylval.uVal = strtol(yytext,NULL,10);
 			return TOK_UINTNUM;
 		}
 0(x|X){HEX}{1,4} {
@@ -156,7 +156,7 @@ NEWLINE \n\r|\n|\r
 			return TOK_UINTNUM;
 }
 
-"."((e|E)("+"|"-")?{UINTNUM})?	{return TOK_SYNTAX_ERROR;}
+"."((e|E)("+"|"-")?{UINTNUM})?	{yyless(1);return TOK_DOT;}
 
 ({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})?	{yylval.dVal = atof(yytext);return TOK_DOUBLENUM;}
 
