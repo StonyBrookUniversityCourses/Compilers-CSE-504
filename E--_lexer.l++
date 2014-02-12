@@ -35,9 +35,9 @@ NEWLINE \n\r|\n|\r
  				}
  				int startPos = i+2;
  				for(i=i+2;yytext[i]!='"'&&yytext[i-1]!='\\';i++) {
-	 				if(yytext[i] == '/'){
+	 				/*if(yytext[i] == '/'){    //Commenting the code as user should get full file path instead of just the filename. This is also according to the specification which says that filename is between the code and says nothing about breaking it with respect to /
 	 					startPos = i+1;
-	 				}
+	 				}*/
 				}
 				int endPos = i-1;
 				char* filename = new char[endPos-startPos+1];
