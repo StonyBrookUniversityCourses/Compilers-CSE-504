@@ -34,7 +34,7 @@ NEWLINE \n\r|\n|\r
  					yylinenum = yylinenum*10 + (int)yytext[i] - 48;
  				}
  				int startPos = i+2;
- 				for(i=i+2;yytext[i]!='"'&&yytext[i-1]!='\\';i++) {
+ 				for(i=i+2;yytext[i]!='"';i++) {
 	 				/*if(yytext[i] == '/'){    //Commenting the code as user should get full file path instead of just the filename. This is also according to the specification which says that filename is between the code and says nothing about breaking it with respect to /
 	 					startPos = i+1;
 	 				}*/
