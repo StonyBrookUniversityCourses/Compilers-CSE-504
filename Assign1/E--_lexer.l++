@@ -50,6 +50,9 @@ NEWLINE \n\r|\n|\r
 			}
 "\""([^"\""\n]|("\\\""))*?("\""|\n) 	{
 						 int j = 0;
+						 if(yytext[yyleng-1] == 10){
+							yylinenum++;
+						 } 
 						 char* str = new char[yyleng-2];
 						 for(int i=1;i<yyleng;i++,j++){
 						 char ch = yytext[i];
