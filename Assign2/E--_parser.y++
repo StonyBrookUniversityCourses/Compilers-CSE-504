@@ -53,29 +53,39 @@ ifc_decl_star: /* empty */ {
 ifc_decl: event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
 ;
 
-rule_star: /* fill in */
+rule_star: rule {
+	prt("Rule");
+};
+
+
+rule : evn_pat_star TOK_ARROW statement_star
 ;
+
 
 event_dec_star: event_dec {
 	prt("EventDecl");
 };
 
-event_dec : TOK_EVENT TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+event_dec : TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
 ;
 
-class_dec: TOK_CLASS TOK_IDENT TOK_SEMICOLON {
+class_dec: TOK_CLASS class_name TOK_SEMICOLON {
 	prt("ClassDecl");
 };
 
-func_decl : type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON{
-	prt("FuncDecl");
+func_decl : type_star func_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON{
+	prt("FunctionDecl");
 };
 
 formal_param_list_star : formal_param_list {
 	prt("FormalParamList");
 };
 
+statement_star: statement {
+	prt("Statement");
+};
 
+statement : /* fill in*/;
 
 formal_param_list : /*empty*/
 | formal_param 
@@ -84,25 +94,61 @@ formal_param_list : /*empty*/
 
 formal_param: type_star TOK_IDENT {
 	prt("FormalParam");
-	//printf("FP: %s\n", $2);
 };
+
+evn_pat_star: evn_pat {
+	prt("NormalEvent");
+}
+evn_pat : primitive_pat_star | evn_negation evn_pat 
+
+evn_negation: TOK_NOT 
+| TOK_COLON 
+| TOK_PAT_OR 
+| TOK_MULT TOK_MULT
+;
+
+primitive_pat_star: primitive_pat {
+	prt("PrimitivePat");
+};
+
+primitive_pat: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN;
+ /*support bit or condition*/
+
+evn_param_list_star : evn_param_list
+;
+
+evn_param_list: /*empty*/
+| event_param
+| evn_param_list TOK_COMMA event_param
+;
+
+event_param: TOK_IDENT{
+	prt("EventFormalParam");
+
+};
+func_name: TOK_IDENT;
+
+class_name: TOK_IDENT;
+
+event_name : TOK_IDENT;
 
 type_star : type {
 	prt("Type");
 };
 
-type: TOK_ULONGNUM 
-| TOK_UINTNUM 
-| TOK_DOUBLENUM 
-| TOK_VOID 
+
+
+type: base_type
+| TOK_UNSIGNED base_type
+| class_name
+
+base_type:TOK_VOID 
 | TOK_STRING 
 | TOK_INT 
-| TOK_UNSIGNED TOK_INT /*is unsigned valid?*/
 | TOK_BOOL 
 | TOK_BYTE 
 | TOK_DOUBLE 
 | TOK_SHORT
 | TOK_LONG
 ;
-
 %%
