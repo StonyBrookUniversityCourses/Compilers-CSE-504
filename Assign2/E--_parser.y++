@@ -48,15 +48,23 @@ ifc_decl_star: /* empty */ {
 	errMsg("Syntax error, expecting a declaration");
 };
 
-ifc_decl: class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
+ifc_decl: event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
 ;
 
 rule_star: /* fill in */
 ;
 
+event_dec_star: event_dec {
+	prt("EventDecl");
+};
+
+event_dec : TOK_EVENT TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+;
+
 class_dec: TOK_CLASS TOK_IDENT TOK_SEMICOLON {
 	prt("ClassDecl");
 };
+
 func_decl : type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON{
 	prt("FuncDecl");
 };
@@ -64,6 +72,8 @@ func_decl : type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN TOK
 formal_param_list_star : formal_param_list {
 	prt("FormalParamList");
 };
+
+
 
 formal_param_list : /*empty*/
 | formal_param 
