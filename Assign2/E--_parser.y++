@@ -50,6 +50,7 @@ using namespace std;
 %right 		TOK_UMINUS
 /*%left		where is left brac*/
 %left		TOK_DOT
+%right		TOK_ELSE "then"
 /**************************************************************************/
 
 %start specification
@@ -117,8 +118,7 @@ formal_param_list_star : /*empty*/
 	prt("FormalParamList");
 };
 
-statement_star: statement 
-| statement_star TOK_SEMICOLON
+statement_star: statement
 ;
 
 com_stmt_star: com_stmt {
@@ -126,8 +126,8 @@ com_stmt_star: com_stmt {
 };
 
 
-com_stmt: TOK_LBRACE stmt_list TOK_RBRACE {
-};
+com_stmt: TOK_LBRACE stmt_list TOK_RBRACE
+| com_stmt TOK_SEMICOLON
 
 stmt_list: statement_star 
 | stmt_list statement_star
@@ -139,6 +139,14 @@ statement : empty_stmt
 | com_stmt_star
 | assign_expr TOK_SEMICOLON {prt("AssignStmt");}
 | ret_stmt {prt("ReturnStmt");}
+| if_then_stmt {prt("IfThenStmt");}		%prec "then"
+| if_then_else_stmt {prt("IfThenElseStmt");}
+;
+
+if_then_else_stmt: if_then_stmt TOK_ELSE statement_star
+;
+
+if_then_stmt: TOK_IF expr_star statement_star
 ;
 
 ret_stmt: TOK_RETURN expr_star
