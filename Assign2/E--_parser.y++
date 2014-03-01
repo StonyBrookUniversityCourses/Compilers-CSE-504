@@ -24,11 +24,11 @@ using namespace std;
 
 /* Key words */
 
-%token TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
-%token TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
-%token TOK_VOID TOK_STRING TOK_LONG 
-%token TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
-%token<cVal> TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
+%token 		TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
+%token 		TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
+%token 		TOK_VOID TOK_STRING TOK_LONG 
+%token 		TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
+%token<cVal> 	TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
 
 %type<cVal> error
 /*********************   Precedence and Associativity    ********************/
@@ -55,10 +55,8 @@ using namespace std;
 %start specification
 %%
 
-specification: ifc_decl_star rule_star {
-	prt("Spec");
-}
-|/*empty string*/ {	
+specification: ifc_decl_star rule_star {prt("Spec");}
+| /*empty string*/ {	
 	errMsg("Must contain at least one rule");
 	prt("Spec");
 };
@@ -68,17 +66,15 @@ ifc_decl_star: /* empty */ {
 | ifc_decl_star ifc_decl {}
 | ifc_decl_star error TOK_SEMICOLON {
 	errMsg("Syntax error, expecting a declaration");
- printf ("Error: %s\n", $2);	
+	printf ("Error: %s\n", $2);	
 };
 
-ifc_decl: event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
+ifc_decl: var_dec | event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
 ;
 
 rule_star: rule
 | rule_star rule
 ;
-
-
 
 rule : evn_pat_star TOK_ARROW statement_star {
 	prt("Rule");
@@ -104,8 +100,8 @@ formal_param_list_star : formal_param_list {
 	prt("FormalParamList");
 };
 
-statement_star: statement |
-statement_star TOK_SEMICOLON
+statement_star: statement 
+| statement_star TOK_SEMICOLON
 ;
 
 com_stmt_star: com_stmt {
@@ -145,6 +141,18 @@ expr_list: /*empty*/
 | expr_star
 | expr_list TOK_COMMA expr_star
 ;
+
+var_dec: type_star var_list TOK_SEMICOLON
+;
+
+var_list: var_name {prt("VariableDecl");}
+| var_assign
+| var_list TOK_COMMA var_name
+;
+
+var_assign: var_name TOK_ASSIGN expr_star {
+	prt("VariableDecliWithInit");
+};
 
 var_name: TOK_IDENT
 ;
