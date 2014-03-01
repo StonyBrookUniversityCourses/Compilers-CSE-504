@@ -25,14 +25,15 @@ using namespace std;
 /* Key words */
 
 %token TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
-%token TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM TOK_VOID TOK_STRING TOK_LONG 
+%token TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
+%token TOK_VOID TOK_STRING TOK_LONG 
 %token TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
 %token<cVal> TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
 
-%type<cVal> error 
+%type<cVal> error
 /*********************   Precedence and Associativity    ********************/
 
-
+%left TOK_BITOR
 /**************************************************************************/
 
 %start specification
@@ -53,13 +54,15 @@ ifc_decl_star: /* empty */ {
 ifc_decl: event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
 ;
 
-rule_star: rule {
+rule_star: rule
+| rule_star rule
+;
+
+
+
+rule : evn_pat_star TOK_ARROW statement_star {
 	prt("Rule");
 };
-
-
-rule : evn_pat_star TOK_ARROW statement_star
-;
 
 
 event_dec_star: event_dec {
@@ -81,12 +84,75 @@ formal_param_list_star : formal_param_list {
 	prt("FormalParamList");
 };
 
-statement_star: statement {
-	prt("Statement");
+statement_star: statement |
+statement_star TOK_SEMICOLON
+;
+
+com_stmt_star: com_stmt {
+	prt("CompoundStmt");
 };
 
-statement : /* fill in*/;
 
+com_stmt: TOK_LBRACE stmt_list TOK_RBRACE {
+};
+
+stmt_list: statement_star 
+| stmt_list statement_star
+;
+
+
+statement : empty_stmt
+| func_invoc_stmt
+| com_stmt_star
+
+;
+
+empty_stmt: /*empty statement*/ TOK_SEMICOLON
+;
+
+func_invoc_stmt: func_invoc TOK_SEMICOLON {
+	prt("FunctionInvocationStmt");
+};
+
+func_invoc: func_name TOK_LPAREN expr_list_star TOK_RPAREN {
+	prt("FunctionInvocation");
+};
+
+expr_list_star: expr_list 
+;
+
+expr_list: /*empty*/
+| expr_star
+| expr_list TOK_COMMA expr_star
+;
+
+var_name: TOK_IDENT
+;
+
+ref_expr: var_name {
+	prt("RefExpr");
+};
+
+expr_star: expr;
+
+expr: lit_star
+| func_invoc
+| ref_expr
+;
+
+
+
+
+lit_star:literal {
+	prt("Literal");
+	//:cout<<"Lit:"<<$1<<endl;
+};
+
+literal: TOK_ULONGNUM
+| TOK_UINTNUM 
+| TOK_DOUBLENUM
+| TOK_STRCONST
+;
 formal_param_list : /*empty*/
 | formal_param 
 | formal_param_list TOK_COMMA formal_param
@@ -97,8 +163,8 @@ formal_param: type_star TOK_IDENT {
 };
 
 evn_pat_star: evn_pat {
-	prt("NormalEvent");
-}
+};
+
 evn_pat : primitive_pat_star | evn_negation evn_pat 
 
 evn_negation: TOK_NOT 
@@ -109,10 +175,26 @@ evn_negation: TOK_NOT
 
 primitive_pat_star: primitive_pat {
 	prt("PrimitivePat");
+}
+| primitive_pat TOK_BITOR expr_star {
+	prt("PrimitivePatWithCond");
 };
 
-primitive_pat: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN;
+primitive_pat : normal_event
+| any_event_star
+;
+
+normal_event: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN {
+	prt("NormalEvent");
+};
  /*support bit or condition*/
+
+any_event_star: any_event {
+	prt("anyEvent");
+}
+
+any_event: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
+;
 
 evn_param_list_star : evn_param_list
 ;
@@ -126,6 +208,7 @@ event_param: TOK_IDENT{
 	prt("EventFormalParam");
 
 };
+
 func_name: TOK_IDENT;
 
 class_name: TOK_IDENT;
