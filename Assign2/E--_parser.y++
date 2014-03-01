@@ -17,39 +17,39 @@ using namespace std;
 %token TOK_BITAND TOK_BITOR TOK_BITNOT TOK_BITXOR TOK_SHL TOK_SHR 
 %token TOK_GT TOK_LT TOK_GE TOK_LE TOK_EQ  TOK_NE TOK_AND TOK_OR TOK_NOT 
 %token TOK_COMMA TOK_ASSIGN TOK_SEMICOLON TOK_COLON TOK_ARROW
-%token TOK_LBRACE TOK_RBRACE TOK_LPAREN TOK_RPAREN TOK_DOT
+%token TOK_LBRACE TOK_RBRACE TOK_LPAREN TOK_RPAREN TOK_DOT TOK_LBRACK
 
 /* Key words */
 
-%token 						TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
-%token 						TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
-%token 						TOK_VOID TOK_STRING TOK_LONG 
-%token 						TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
-%token<cVal> 					TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
+%token 	TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
+%token 	TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
+%token 	TOK_VOID TOK_STRING TOK_LONG 
+%token 	TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
+%token	TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
 
 %type<cVal> error
 /*********************   Precedence and Associativity    ********************/
-%nonassoc					TOK_ASSIGN
-%left						TOK_PAT_OR
-%left						TOK_COLON
-%left						TOK_PAT_STAR
-%right						TOK_PAT_NOT
-%left						TOK_OR
-%left						TOK_AND
-%right						TOK_NOT
-%nonassoc					TOK_EQ TOK_NE TOK_GT TOK_LT TOK_GE TOK_LE
-%left 						TOK_BITOR TOK_BITXOR
-%left						TOK_BITAND
-%right						TOK_BITNOT
-%left						TOK_SHL TOK_SHR
-%left						TOK_PLUS TOK_MINUS
-%left						TOK_MULT TOK_DIV TOK_MOD
-%right 						TOK_UMINUS
-/*%left						where is left brac*/
-%left						TOK_DOT
-%right						TOK_ELSE "then"
-%right						TOK_LPAREN 
-%left						TOK_RPAREN
+%nonassoc	TOK_ASSIGN
+%left		TOK_PAT_OR
+%left		TOK_COLON
+%left		TOK_PAT_STAR
+%right		TOK_PAT_NOT
+%left		TOK_OR
+%left		TOK_AND
+%right		TOK_NOT
+%nonassoc	TOK_EQ TOK_NE TOK_GT TOK_LT TOK_GE TOK_LE
+%left 		TOK_BITOR TOK_BITXOR
+%left		TOK_BITAND
+%right		TOK_BITNOT
+%left		TOK_SHL TOK_SHR
+%left		TOK_PLUS TOK_MINUS
+%left		TOK_MULT TOK_DIV TOK_MOD
+%right 		TOK_UMINUS
+/*%left		where is left brac*/
+%left		TOK_DOT
+%right		TOK_ELSE "then"
+%right		TOK_LPAREN 
+%left		TOK_RPAREN
 /**************************************************************************/
 
 %start specification

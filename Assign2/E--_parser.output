@@ -1,17 +1,12 @@
 Terminals unused in grammar
 
    TOK_LEX_ERROR
-   TOK_PAT_STAR
-   TOK_PAT_OR
-   TOK_PAT_NOT
    TOK_PLUS
-   TOK_MINUS
    TOK_UMINUS
    TOK_MULT
    TOK_DIV
    TOK_MOD
    TOK_BITAND
-   TOK_BITOR
    TOK_BITNOT
    TOK_BITXOR
    TOK_SHL
@@ -25,37 +20,12 @@ Terminals unused in grammar
    TOK_AND
    TOK_OR
    TOK_NOT
-   TOK_COMMA
-   TOK_ASSIGN
-   TOK_COLON
-   TOK_ARROW
-   TOK_LBRACE
-   TOK_RBRACE
-   TOK_LPAREN
-   TOK_RPAREN
-   TOK_IF
-   TOK_ELSE
-   TOK_CLASS
-   TOK_RETURN
-   TOK_EVENT
-   TOK_ANY
+   TOK_DOT
+   TOK_LBRACK
    TOK_PRINT
-   TOK_ULONGNUM
-   TOK_UINTNUM
-   TOK_DOUBLENUM
-   TOK_VOID
-   TOK_STRING
-   TOK_STRCONST
-   TOK_INT
-   TOK_UNSIGNED
-   TOK_BOOL
-   TOK_BYTE
-   TOK_DOUBLE
-   TOK_SHORT
-   TOK_LONG
-   TOK_TRUE
-   TOK_FALSE
-   TOK_IDENT
+
+
+State 80 conflicts: 1 shift/reduce
 
 
 Grammar
@@ -63,32 +33,183 @@ Grammar
     0 $accept: specification $end
 
     1 specification: ifc_decl_star rule_star
+    2              | /* empty */
 
-    2 ifc_decl_star: /* empty */
-    3              | ifc_decl_star ifc_decl
-    4              | ifc_decl_star error TOK_SEMICOLON
+    3 ifc_decl_star: /* empty */
+    4              | ifc_decl_star ifc_decl
+    5              | ifc_decl_star error TOK_SEMICOLON
 
-    5 ifc_decl: TOK_SEMICOLON
+    6 ifc_decl: var_dec
+    7         | event_dec_star
+    8         | class_dec
+    9         | func_decl_star
+   10         | TOK_SEMICOLON
 
-    6 rule_star: /* empty */
+   11 rule_star: rule
+   12          | rule_star rule
+
+   13 rule: evn_pat_star TOK_ARROW statement_star
+
+   14 event_dec_star: event_dec
+
+   15 event_dec: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+
+   16 class_dec: TOK_CLASS class_name TOK_SEMICOLON
+
+   17 func_decl_star: func_decl TOK_SEMICOLON
+   18               | func_decl func_body
+
+   19 func_decl: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN
+
+   20 func_body: TOK_LBRACE func_body_inner TOK_RBRACE
+
+   21 func_body_inner: statement_star
+   22                | func_body_inner statement_star
+   23                | var_dec statement_star
+
+   24 formal_param_list_star: /* empty */
+   25                       | formal_param_list
+
+   26 statement_star: statement
+
+   27 com_stmt_star: com_stmt
+
+   28 com_stmt: TOK_LBRACE stmt_list TOK_RBRACE
+   29         | com_stmt TOK_SEMICOLON
+
+   30 stmt_list: statement_star
+   31          | stmt_list statement_star
+
+   32 statement: empty_stmt
+   33          | func_invoc_stmt
+   34          | com_stmt_star
+   35          | assign_expr TOK_SEMICOLON
+   36          | ret_stmt TOK_SEMICOLON
+   37          | if_then_stmt
+   38          | if_then_else_stmt
+
+   39 if_then_else_stmt: if_then_stmt TOK_ELSE statement_star
+
+   40 if_then_stmt: TOK_IF expr_star statement_star
+
+   41 ret_stmt: TOK_RETURN expr_star
+
+   42 empty_stmt: TOK_SEMICOLON
+
+   43 func_invoc_stmt: func_invoc TOK_SEMICOLON
+
+   44 func_invoc: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN
+
+   45 expr_list_star: expr_list
+
+   46 expr_list: /* empty */
+   47          | expr_star
+   48          | expr_list TOK_COMMA expr_star
+
+   49 var_dec: type_star var_list TOK_SEMICOLON
+
+   50 var_list: var_name
+   51         | var_assign
+   52         | var_list TOK_COMMA var_name
+
+   53 var_assign: var_name TOK_ASSIGN expr_star
+
+   54 var_name: TOK_IDENT
+
+   55 ref_expr: var_name
+
+   56 expr_star: expr
+   57          | TOK_MINUS expr
+   58          | TOK_LPAREN expr TOK_RPAREN
+
+   59 expr: lit_star
+   60     | func_invoc
+   61     | ref_expr
+   62     | assign_expr
+
+   63 assign_expr: ref_expr TOK_ASSIGN expr
+
+   64 lit_star: literal
+
+   65 literal: number
+   66        | TOK_STRCONST
+   67        | TOK_TRUE
+   68        | TOK_FALSE
+
+   69 number: TOK_ULONGNUM
+   70       | TOK_UINTNUM
+   71       | TOK_DOUBLENUM
+
+   72 formal_param_list: formal_param
+   73                  | formal_param_list TOK_COMMA formal_param
+
+   74 formal_param: type_star var_name
+
+   75 evn_pat_star: evn_pat
+
+   76 evn_pat: primitive_pat_star
+   77        | TOK_PAT_NOT evn_pat
+   78        | evn_pat TOK_PAT_STAR
+   79        | evn_pat TOK_PAT_OR evn_pat
+   80        | evn_pat TOK_COLON evn_pat
+   81        | TOK_LPAREN evn_pat TOK_RPAREN
+
+   82 primitive_pat_star: primitive_pat
+   83                   | primitive_pat TOK_BITOR expr_star
+
+   84 primitive_pat: normal_event
+   85              | any_event_star
+
+   86 normal_event: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN
+
+   87 any_event_star: any_event
+
+   88 any_event: TOK_ANY
+   89          | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
+
+   90 evn_param_list_star: evn_param_list
+
+   91 evn_param_list: event_param
+   92               | evn_param_list TOK_COMMA event_param
+
+   93 event_param: TOK_IDENT
+
+   94 class_name: TOK_IDENT
+
+   95 event_name: TOK_IDENT
+
+   96 type_star: type
+
+   97 type: base_type
+   98     | TOK_UNSIGNED base_type
+   99     | class_name
+
+  100 base_type: TOK_VOID
+  101          | TOK_STRING
+  102          | TOK_INT
+  103          | TOK_BOOL
+  104          | TOK_BYTE
+  105          | TOK_DOUBLE
+  106          | TOK_SHORT
+  107          | TOK_LONG
 
 
 Terminals, with rules where they appear
 
 $end (0) 0
-error (256) 4
+error (256) 5
 TOK_LEX_ERROR (258)
-TOK_PAT_STAR (259)
-TOK_PAT_OR (260)
-TOK_PAT_NOT (261)
+TOK_PAT_STAR (259) 78
+TOK_PAT_OR (260) 79
+TOK_PAT_NOT (261) 77
 TOK_PLUS (262)
-TOK_MINUS (263)
+TOK_MINUS (263) 57
 TOK_UMINUS (264)
 TOK_MULT (265)
 TOK_DIV (266)
 TOK_MOD (267)
 TOK_BITAND (268)
-TOK_BITOR (269)
+TOK_BITOR (269) 83
 TOK_BITNOT (270)
 TOK_BITXOR (271)
 TOK_SHL (272)
@@ -102,123 +223,1888 @@ TOK_NE (279)
 TOK_AND (280)
 TOK_OR (281)
 TOK_NOT (282)
-TOK_COMMA (283)
-TOK_ASSIGN (284)
-TOK_SEMICOLON (285) 4 5
-TOK_COLON (286)
-TOK_ARROW (287)
-TOK_LBRACE (288)
-TOK_RBRACE (289)
-TOK_LPAREN (290)
-TOK_RPAREN (291)
-TOK_IF (292)
-TOK_ELSE (293)
-TOK_CLASS (294)
-TOK_RETURN (295)
-TOK_EVENT (296)
-TOK_ANY (297)
-TOK_PRINT (298)
-TOK_ULONGNUM (299)
-TOK_UINTNUM (300)
-TOK_DOUBLENUM (301)
-TOK_VOID (302)
-TOK_STRING (303)
-TOK_STRCONST (304)
-TOK_INT (305)
-TOK_UNSIGNED (306)
-TOK_BOOL (307)
-TOK_BYTE (308)
-TOK_DOUBLE (309)
-TOK_SHORT (310)
-TOK_LONG (311)
-TOK_TRUE (312)
-TOK_FALSE (313)
-TOK_IDENT (314)
+TOK_COMMA (283) 48 52 73 92
+TOK_ASSIGN (284) 53 63
+TOK_SEMICOLON (285) 5 10 15 16 17 29 35 36 42 43 49
+TOK_COLON (286) 80
+TOK_ARROW (287) 13
+TOK_LBRACE (288) 20 28
+TOK_RBRACE (289) 20 28
+TOK_LPAREN (290) 15 19 44 58 81 86 89
+TOK_RPAREN (291) 15 19 44 58 81 86 89
+TOK_DOT (292)
+TOK_LBRACK (293)
+TOK_IF (294) 40
+TOK_ELSE (295) 39
+TOK_CLASS (296) 16
+TOK_RETURN (297) 41
+TOK_EVENT (298) 15
+TOK_ANY (299) 88 89
+TOK_PRINT (300)
+TOK_ULONGNUM (301) 69
+TOK_UINTNUM (302) 70
+TOK_DOUBLENUM (303) 71
+TOK_VOID (304) 100
+TOK_STRING (305) 101
+TOK_LONG (306) 107
+TOK_INT (307) 102
+TOK_UNSIGNED (308) 98
+TOK_BOOL (309) 103
+TOK_BYTE (310) 104
+TOK_DOUBLE (311) 105
+TOK_SHORT (312) 106
+TOK_STRCONST (313) 66
+TOK_TRUE (314) 67
+TOK_FALSE (315) 68
+TOK_IDENT (316) 19 44 54 93 94 95
+"then" (317)
 
 
 Nonterminals, with rules where they appear
 
-$accept (60)
+$accept (63)
     on left: 0
-specification (61)
-    on left: 1, on right: 0
-ifc_decl_star (62)
-    on left: 2 3 4, on right: 1 3 4
-ifc_decl (63)
-    on left: 5, on right: 3
-rule_star (64)
-    on left: 6, on right: 1
+specification (64)
+    on left: 1 2, on right: 0
+ifc_decl_star (65)
+    on left: 3 4 5, on right: 1 4 5
+ifc_decl (66)
+    on left: 6 7 8 9 10, on right: 4
+rule_star (67)
+    on left: 11 12, on right: 1 12
+rule (68)
+    on left: 13, on right: 11 12
+event_dec_star (69)
+    on left: 14, on right: 7
+event_dec (70)
+    on left: 15, on right: 14
+class_dec (71)
+    on left: 16, on right: 8
+func_decl_star (72)
+    on left: 17 18, on right: 9
+func_decl (73)
+    on left: 19, on right: 17 18
+func_body (74)
+    on left: 20, on right: 18
+func_body_inner (75)
+    on left: 21 22 23, on right: 20 22
+formal_param_list_star (76)
+    on left: 24 25, on right: 15 19
+statement_star (77)
+    on left: 26, on right: 13 21 22 23 30 31 39 40
+com_stmt_star (78)
+    on left: 27, on right: 34
+com_stmt (79)
+    on left: 28 29, on right: 27 29
+stmt_list (80)
+    on left: 30 31, on right: 28 31
+statement (81)
+    on left: 32 33 34 35 36 37 38, on right: 26
+if_then_else_stmt (82)
+    on left: 39, on right: 38
+if_then_stmt (83)
+    on left: 40, on right: 37 39
+ret_stmt (84)
+    on left: 41, on right: 36
+empty_stmt (85)
+    on left: 42, on right: 32
+func_invoc_stmt (86)
+    on left: 43, on right: 33
+func_invoc (87)
+    on left: 44, on right: 43 60
+expr_list_star (88)
+    on left: 45, on right: 44
+expr_list (89)
+    on left: 46 47 48, on right: 45 48
+var_dec (90)
+    on left: 49, on right: 6 23
+var_list (91)
+    on left: 50 51 52, on right: 49 52
+var_assign (92)
+    on left: 53, on right: 51
+var_name (93)
+    on left: 54, on right: 50 52 53 55 74
+ref_expr (94)
+    on left: 55, on right: 61 63
+expr_star (95)
+    on left: 56 57 58, on right: 40 41 47 48 53 83
+expr (96)
+    on left: 59 60 61 62, on right: 56 57 58 63
+assign_expr (97)
+    on left: 63, on right: 35 62
+lit_star (98)
+    on left: 64, on right: 59
+literal (99)
+    on left: 65 66 67 68, on right: 64
+number (100)
+    on left: 69 70 71, on right: 65
+formal_param_list (101)
+    on left: 72 73, on right: 25 73
+formal_param (102)
+    on left: 74, on right: 72 73
+evn_pat_star (103)
+    on left: 75, on right: 13
+evn_pat (104)
+    on left: 76 77 78 79 80 81, on right: 75 77 78 79 80 81
+primitive_pat_star (105)
+    on left: 82 83, on right: 76
+primitive_pat (106)
+    on left: 84 85, on right: 82 83
+normal_event (107)
+    on left: 86, on right: 84
+any_event_star (108)
+    on left: 87, on right: 85
+any_event (109)
+    on left: 88 89, on right: 87
+evn_param_list_star (110)
+    on left: 90, on right: 86 89
+evn_param_list (111)
+    on left: 91 92, on right: 90 92
+event_param (112)
+    on left: 93, on right: 91 92
+class_name (113)
+    on left: 94, on right: 16 99
+event_name (114)
+    on left: 95, on right: 15 86
+type_star (115)
+    on left: 96, on right: 19 49 74
+type (116)
+    on left: 97 98 99, on right: 96
+base_type (117)
+    on left: 100 101 102 103 104 105 106 107, on right: 97 98
 
 
-state 0
+State 0
 
     0 $accept: . specification $end
 
-    $default  reduce using rule 2 (ifc_decl_star)
+    $end      reduce using rule 2 (specification)
+    $default  reduce using rule 3 (ifc_decl_star)
 
     specification  go to state 1
     ifc_decl_star  go to state 2
 
 
-state 1
+State 1
 
     0 $accept: specification . $end
 
     $end  shift, and go to state 3
 
 
-state 2
+State 2
 
     1 specification: ifc_decl_star . rule_star
-    3 ifc_decl_star: ifc_decl_star . ifc_decl
-    4              | ifc_decl_star . error TOK_SEMICOLON
+    4 ifc_decl_star: ifc_decl_star . ifc_decl
+    5              | ifc_decl_star . error TOK_SEMICOLON
 
     error          shift, and go to state 4
-    TOK_SEMICOLON  shift, and go to state 5
+    TOK_PAT_NOT    shift, and go to state 5
+    TOK_SEMICOLON  shift, and go to state 6
+    TOK_LPAREN     shift, and go to state 7
+    TOK_CLASS      shift, and go to state 8
+    TOK_EVENT      shift, and go to state 9
+    TOK_ANY        shift, and go to state 10
+    TOK_VOID       shift, and go to state 11
+    TOK_STRING     shift, and go to state 12
+    TOK_LONG       shift, and go to state 13
+    TOK_INT        shift, and go to state 14
+    TOK_UNSIGNED   shift, and go to state 15
+    TOK_BOOL       shift, and go to state 16
+    TOK_BYTE       shift, and go to state 17
+    TOK_DOUBLE     shift, and go to state 18
+    TOK_SHORT      shift, and go to state 19
+    TOK_IDENT      shift, and go to state 20
 
-    $end  reduce using rule 6 (rule_star)
+    ifc_decl            go to state 21
+    rule_star           go to state 22
+    rule                go to state 23
+    event_dec_star      go to state 24
+    event_dec           go to state 25
+    class_dec           go to state 26
+    func_decl_star      go to state 27
+    func_decl           go to state 28
+    var_dec             go to state 29
+    evn_pat_star        go to state 30
+    evn_pat             go to state 31
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    class_name          go to state 37
+    event_name          go to state 38
+    type_star           go to state 39
+    type                go to state 40
+    base_type           go to state 41
 
-    ifc_decl   go to state 6
-    rule_star  go to state 7
 
-
-state 3
+State 3
 
     0 $accept: specification $end .
 
     $default  accept
 
 
-state 4
+State 4
 
-    4 ifc_decl_star: ifc_decl_star error . TOK_SEMICOLON
+    5 ifc_decl_star: ifc_decl_star error . TOK_SEMICOLON
 
-    TOK_SEMICOLON  shift, and go to state 8
-
-
-state 5
-
-    5 ifc_decl: TOK_SEMICOLON .
-
-    $default  reduce using rule 5 (ifc_decl)
+    TOK_SEMICOLON  shift, and go to state 42
 
 
-state 6
+State 5
 
-    3 ifc_decl_star: ifc_decl_star ifc_decl .
+   77 evn_pat: TOK_PAT_NOT . evn_pat
 
-    $default  reduce using rule 3 (ifc_decl_star)
+    TOK_PAT_NOT  shift, and go to state 5
+    TOK_LPAREN   shift, and go to state 7
+    TOK_ANY      shift, and go to state 10
+    TOK_IDENT    shift, and go to state 43
+
+    evn_pat             go to state 44
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    event_name          go to state 38
 
 
-state 7
+State 6
+
+   10 ifc_decl: TOK_SEMICOLON .
+
+    $default  reduce using rule 10 (ifc_decl)
+
+
+State 7
+
+   81 evn_pat: TOK_LPAREN . evn_pat TOK_RPAREN
+
+    TOK_PAT_NOT  shift, and go to state 5
+    TOK_LPAREN   shift, and go to state 7
+    TOK_ANY      shift, and go to state 10
+    TOK_IDENT    shift, and go to state 43
+
+    evn_pat             go to state 45
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    event_name          go to state 38
+
+
+State 8
+
+   16 class_dec: TOK_CLASS . class_name TOK_SEMICOLON
+
+    TOK_IDENT  shift, and go to state 46
+
+    class_name  go to state 47
+
+
+State 9
+
+   15 event_dec: TOK_EVENT . event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+
+    TOK_IDENT  shift, and go to state 43
+
+    event_name  go to state 48
+
+
+State 10
+
+   88 any_event: TOK_ANY .
+   89          | TOK_ANY . TOK_LPAREN evn_param_list_star TOK_RPAREN
+
+    TOK_LPAREN  shift, and go to state 49
+
+    $default  reduce using rule 88 (any_event)
+
+
+State 11
+
+  100 base_type: TOK_VOID .
+
+    $default  reduce using rule 100 (base_type)
+
+
+State 12
+
+  101 base_type: TOK_STRING .
+
+    $default  reduce using rule 101 (base_type)
+
+
+State 13
+
+  107 base_type: TOK_LONG .
+
+    $default  reduce using rule 107 (base_type)
+
+
+State 14
+
+  102 base_type: TOK_INT .
+
+    $default  reduce using rule 102 (base_type)
+
+
+State 15
+
+   98 type: TOK_UNSIGNED . base_type
+
+    TOK_VOID    shift, and go to state 11
+    TOK_STRING  shift, and go to state 12
+    TOK_LONG    shift, and go to state 13
+    TOK_INT     shift, and go to state 14
+    TOK_BOOL    shift, and go to state 16
+    TOK_BYTE    shift, and go to state 17
+    TOK_DOUBLE  shift, and go to state 18
+    TOK_SHORT   shift, and go to state 19
+
+    base_type  go to state 50
+
+
+State 16
+
+  103 base_type: TOK_BOOL .
+
+    $default  reduce using rule 103 (base_type)
+
+
+State 17
+
+  104 base_type: TOK_BYTE .
+
+    $default  reduce using rule 104 (base_type)
+
+
+State 18
+
+  105 base_type: TOK_DOUBLE .
+
+    $default  reduce using rule 105 (base_type)
+
+
+State 19
+
+  106 base_type: TOK_SHORT .
+
+    $default  reduce using rule 106 (base_type)
+
+
+State 20
+
+   94 class_name: TOK_IDENT .
+   95 event_name: TOK_IDENT .
+
+    TOK_LPAREN  reduce using rule 95 (event_name)
+    $default    reduce using rule 94 (class_name)
+
+
+State 21
+
+    4 ifc_decl_star: ifc_decl_star ifc_decl .
+
+    $default  reduce using rule 4 (ifc_decl_star)
+
+
+State 22
 
     1 specification: ifc_decl_star rule_star .
+   12 rule_star: rule_star . rule
+
+    TOK_PAT_NOT  shift, and go to state 5
+    TOK_LPAREN   shift, and go to state 7
+    TOK_ANY      shift, and go to state 10
+    TOK_IDENT    shift, and go to state 43
 
     $default  reduce using rule 1 (specification)
 
+    rule                go to state 51
+    evn_pat_star        go to state 30
+    evn_pat             go to state 31
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    event_name          go to state 38
 
-state 8
 
-    4 ifc_decl_star: ifc_decl_star error TOK_SEMICOLON .
+State 23
 
-    $default  reduce using rule 4 (ifc_decl_star)
+   11 rule_star: rule .
+
+    $default  reduce using rule 11 (rule_star)
+
+
+State 24
+
+    7 ifc_decl: event_dec_star .
+
+    $default  reduce using rule 7 (ifc_decl)
+
+
+State 25
+
+   14 event_dec_star: event_dec .
+
+    $default  reduce using rule 14 (event_dec_star)
+
+
+State 26
+
+    8 ifc_decl: class_dec .
+
+    $default  reduce using rule 8 (ifc_decl)
+
+
+State 27
+
+    9 ifc_decl: func_decl_star .
+
+    $default  reduce using rule 9 (ifc_decl)
+
+
+State 28
+
+   17 func_decl_star: func_decl . TOK_SEMICOLON
+   18               | func_decl . func_body
+
+    TOK_SEMICOLON  shift, and go to state 52
+    TOK_LBRACE     shift, and go to state 53
+
+    func_body  go to state 54
+
+
+State 29
+
+    6 ifc_decl: var_dec .
+
+    $default  reduce using rule 6 (ifc_decl)
+
+
+State 30
+
+   13 rule: evn_pat_star . TOK_ARROW statement_star
+
+    TOK_ARROW  shift, and go to state 55
+
+
+State 31
+
+   75 evn_pat_star: evn_pat .
+   78 evn_pat: evn_pat . TOK_PAT_STAR
+   79        | evn_pat . TOK_PAT_OR evn_pat
+   80        | evn_pat . TOK_COLON evn_pat
+
+    TOK_PAT_STAR  shift, and go to state 56
+    TOK_PAT_OR    shift, and go to state 57
+    TOK_COLON     shift, and go to state 58
+
+    $default  reduce using rule 75 (evn_pat_star)
+
+
+State 32
+
+   76 evn_pat: primitive_pat_star .
+
+    $default  reduce using rule 76 (evn_pat)
+
+
+State 33
+
+   82 primitive_pat_star: primitive_pat .
+   83                   | primitive_pat . TOK_BITOR expr_star
+
+    TOK_BITOR  shift, and go to state 59
+
+    $default  reduce using rule 82 (primitive_pat_star)
+
+
+State 34
+
+   84 primitive_pat: normal_event .
+
+    $default  reduce using rule 84 (primitive_pat)
+
+
+State 35
+
+   85 primitive_pat: any_event_star .
+
+    $default  reduce using rule 85 (primitive_pat)
+
+
+State 36
+
+   87 any_event_star: any_event .
+
+    $default  reduce using rule 87 (any_event_star)
+
+
+State 37
+
+   99 type: class_name .
+
+    $default  reduce using rule 99 (type)
+
+
+State 38
+
+   86 normal_event: event_name . TOK_LPAREN evn_param_list_star TOK_RPAREN
+
+    TOK_LPAREN  shift, and go to state 60
+
+
+State 39
+
+   19 func_decl: type_star . TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN
+   49 var_dec: type_star . var_list TOK_SEMICOLON
+
+    TOK_IDENT  shift, and go to state 61
+
+    var_list    go to state 62
+    var_assign  go to state 63
+    var_name    go to state 64
+
+
+State 40
+
+   96 type_star: type .
+
+    $default  reduce using rule 96 (type_star)
+
+
+State 41
+
+   97 type: base_type .
+
+    $default  reduce using rule 97 (type)
+
+
+State 42
+
+    5 ifc_decl_star: ifc_decl_star error TOK_SEMICOLON .
+
+    $default  reduce using rule 5 (ifc_decl_star)
+
+
+State 43
+
+   95 event_name: TOK_IDENT .
+
+    $default  reduce using rule 95 (event_name)
+
+
+State 44
+
+   77 evn_pat: TOK_PAT_NOT evn_pat .
+   78        | evn_pat . TOK_PAT_STAR
+   79        | evn_pat . TOK_PAT_OR evn_pat
+   80        | evn_pat . TOK_COLON evn_pat
+
+    $default  reduce using rule 77 (evn_pat)
+
+
+State 45
+
+   78 evn_pat: evn_pat . TOK_PAT_STAR
+   79        | evn_pat . TOK_PAT_OR evn_pat
+   80        | evn_pat . TOK_COLON evn_pat
+   81        | TOK_LPAREN evn_pat . TOK_RPAREN
+
+    TOK_PAT_STAR  shift, and go to state 56
+    TOK_PAT_OR    shift, and go to state 57
+    TOK_COLON     shift, and go to state 58
+    TOK_RPAREN    shift, and go to state 65
+
+
+State 46
+
+   94 class_name: TOK_IDENT .
+
+    $default  reduce using rule 94 (class_name)
+
+
+State 47
+
+   16 class_dec: TOK_CLASS class_name . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 66
+
+
+State 48
+
+   15 event_dec: TOK_EVENT event_name . TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+
+    TOK_LPAREN  shift, and go to state 67
+
+
+State 49
+
+   89 any_event: TOK_ANY TOK_LPAREN . evn_param_list_star TOK_RPAREN
+
+    TOK_IDENT  shift, and go to state 68
+
+    evn_param_list_star  go to state 69
+    evn_param_list       go to state 70
+    event_param          go to state 71
+
+
+State 50
+
+   98 type: TOK_UNSIGNED base_type .
+
+    $default  reduce using rule 98 (type)
+
+
+State 51
+
+   12 rule_star: rule_star rule .
+
+    $default  reduce using rule 12 (rule_star)
+
+
+State 52
+
+   17 func_decl_star: func_decl TOK_SEMICOLON .
+
+    $default  reduce using rule 17 (func_decl_star)
+
+
+State 53
+
+   20 func_body: TOK_LBRACE . func_body_inner TOK_RBRACE
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_VOID       shift, and go to state 11
+    TOK_STRING     shift, and go to state 12
+    TOK_LONG       shift, and go to state 13
+    TOK_INT        shift, and go to state 14
+    TOK_UNSIGNED   shift, and go to state 15
+    TOK_BOOL       shift, and go to state 16
+    TOK_BYTE       shift, and go to state 17
+    TOK_DOUBLE     shift, and go to state 18
+    TOK_SHORT      shift, and go to state 19
+    TOK_IDENT      shift, and go to state 76
+
+    func_body_inner    go to state 77
+    statement_star     go to state 78
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_dec            go to state 88
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+    class_name         go to state 37
+    type_star          go to state 92
+    type               go to state 40
+    base_type          go to state 41
+
+
+State 54
+
+   18 func_decl_star: func_decl func_body .
+
+    $default  reduce using rule 18 (func_decl_star)
+
+
+State 55
+
+   13 rule: evn_pat_star TOK_ARROW . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 94
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 56
+
+   78 evn_pat: evn_pat TOK_PAT_STAR .
+
+    $default  reduce using rule 78 (evn_pat)
+
+
+State 57
+
+   79 evn_pat: evn_pat TOK_PAT_OR . evn_pat
+
+    TOK_PAT_NOT  shift, and go to state 5
+    TOK_LPAREN   shift, and go to state 7
+    TOK_ANY      shift, and go to state 10
+    TOK_IDENT    shift, and go to state 43
+
+    evn_pat             go to state 95
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    event_name          go to state 38
+
+
+State 58
+
+   80 evn_pat: evn_pat TOK_COLON . evn_pat
+
+    TOK_PAT_NOT  shift, and go to state 5
+    TOK_LPAREN   shift, and go to state 7
+    TOK_ANY      shift, and go to state 10
+    TOK_IDENT    shift, and go to state 43
+
+    evn_pat             go to state 96
+    primitive_pat_star  go to state 32
+    primitive_pat       go to state 33
+    normal_event        go to state 34
+    any_event_star      go to state 35
+    any_event           go to state 36
+    event_name          go to state 38
+
+
+State 59
+
+   83 primitive_pat_star: primitive_pat TOK_BITOR . expr_star
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr_star    go to state 107
+    expr         go to state 108
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 60
+
+   86 normal_event: event_name TOK_LPAREN . evn_param_list_star TOK_RPAREN
+
+    TOK_IDENT  shift, and go to state 68
+
+    evn_param_list_star  go to state 113
+    evn_param_list       go to state 70
+    event_param          go to state 71
+
+
+State 61
+
+   19 func_decl: type_star TOK_IDENT . TOK_LPAREN formal_param_list_star TOK_RPAREN
+   54 var_name: TOK_IDENT .
+
+    TOK_LPAREN  shift, and go to state 114
+
+    $default  reduce using rule 54 (var_name)
+
+
+State 62
+
+   49 var_dec: type_star var_list . TOK_SEMICOLON
+   52 var_list: var_list . TOK_COMMA var_name
+
+    TOK_COMMA      shift, and go to state 115
+    TOK_SEMICOLON  shift, and go to state 116
+
+
+State 63
+
+   51 var_list: var_assign .
+
+    $default  reduce using rule 51 (var_list)
+
+
+State 64
+
+   50 var_list: var_name .
+   53 var_assign: var_name . TOK_ASSIGN expr_star
+
+    TOK_ASSIGN  shift, and go to state 117
+
+    $default  reduce using rule 50 (var_list)
+
+
+State 65
+
+   81 evn_pat: TOK_LPAREN evn_pat TOK_RPAREN .
+
+    $default  reduce using rule 81 (evn_pat)
+
+
+State 66
+
+   16 class_dec: TOK_CLASS class_name TOK_SEMICOLON .
+
+    $default  reduce using rule 16 (class_dec)
+
+
+State 67
+
+   15 event_dec: TOK_EVENT event_name TOK_LPAREN . formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+
+    TOK_VOID      shift, and go to state 11
+    TOK_STRING    shift, and go to state 12
+    TOK_LONG      shift, and go to state 13
+    TOK_INT       shift, and go to state 14
+    TOK_UNSIGNED  shift, and go to state 15
+    TOK_BOOL      shift, and go to state 16
+    TOK_BYTE      shift, and go to state 17
+    TOK_DOUBLE    shift, and go to state 18
+    TOK_SHORT     shift, and go to state 19
+    TOK_IDENT     shift, and go to state 46
+
+    $default  reduce using rule 24 (formal_param_list_star)
+
+    formal_param_list_star  go to state 118
+    formal_param_list       go to state 119
+    formal_param            go to state 120
+    class_name              go to state 37
+    type_star               go to state 121
+    type                    go to state 40
+    base_type               go to state 41
+
+
+State 68
+
+   93 event_param: TOK_IDENT .
+
+    $default  reduce using rule 93 (event_param)
+
+
+State 69
+
+   89 any_event: TOK_ANY TOK_LPAREN evn_param_list_star . TOK_RPAREN
+
+    TOK_RPAREN  shift, and go to state 122
+
+
+State 70
+
+   90 evn_param_list_star: evn_param_list .
+   92 evn_param_list: evn_param_list . TOK_COMMA event_param
+
+    TOK_COMMA  shift, and go to state 123
+
+    $default  reduce using rule 90 (evn_param_list_star)
+
+
+State 71
+
+   91 evn_param_list: event_param .
+
+    $default  reduce using rule 91 (evn_param_list)
+
+
+State 72
+
+   42 empty_stmt: TOK_SEMICOLON .
+
+    $default  reduce using rule 42 (empty_stmt)
+
+
+State 73
+
+   28 com_stmt: TOK_LBRACE . stmt_list TOK_RBRACE
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 124
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    stmt_list          go to state 125
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 74
+
+   40 if_then_stmt: TOK_IF . expr_star statement_star
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr_star    go to state 126
+    expr         go to state 108
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 75
+
+   41 ret_stmt: TOK_RETURN . expr_star
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr_star    go to state 127
+    expr         go to state 108
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 76
+
+   44 func_invoc: TOK_IDENT . TOK_LPAREN expr_list_star TOK_RPAREN
+   54 var_name: TOK_IDENT .
+   94 class_name: TOK_IDENT .
+
+    TOK_LPAREN  shift, and go to state 128
+
+    TOK_IDENT  reduce using rule 94 (class_name)
+    $default   reduce using rule 54 (var_name)
+
+
+State 77
+
+   20 func_body: TOK_LBRACE func_body_inner . TOK_RBRACE
+   22 func_body_inner: func_body_inner . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_RBRACE     shift, and go to state 129
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 130
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 78
+
+   21 func_body_inner: statement_star .
+
+    $default  reduce using rule 21 (func_body_inner)
+
+
+State 79
+
+   34 statement: com_stmt_star .
+
+    $default  reduce using rule 34 (statement)
+
+
+State 80
+
+   27 com_stmt_star: com_stmt .
+   29 com_stmt: com_stmt . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 131
+
+    TOK_SEMICOLON  [reduce using rule 27 (com_stmt_star)]
+    $default       reduce using rule 27 (com_stmt_star)
+
+
+State 81
+
+   26 statement_star: statement .
+
+    $default  reduce using rule 26 (statement_star)
+
+
+State 82
+
+   38 statement: if_then_else_stmt .
+
+    $default  reduce using rule 38 (statement)
+
+
+State 83
+
+   37 statement: if_then_stmt .
+   39 if_then_else_stmt: if_then_stmt . TOK_ELSE statement_star
+
+    TOK_ELSE  shift, and go to state 132
+
+    $default  reduce using rule 37 (statement)
+
+
+State 84
+
+   36 statement: ret_stmt . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 133
+
+
+State 85
+
+   32 statement: empty_stmt .
+
+    $default  reduce using rule 32 (statement)
+
+
+State 86
+
+   33 statement: func_invoc_stmt .
+
+    $default  reduce using rule 33 (statement)
+
+
+State 87
+
+   43 func_invoc_stmt: func_invoc . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 134
+
+
+State 88
+
+   23 func_body_inner: var_dec . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 135
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 89
+
+   55 ref_expr: var_name .
+
+    $default  reduce using rule 55 (ref_expr)
+
+
+State 90
+
+   63 assign_expr: ref_expr . TOK_ASSIGN expr
+
+    TOK_ASSIGN  shift, and go to state 136
+
+
+State 91
+
+   35 statement: assign_expr . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 137
+
+
+State 92
+
+   49 var_dec: type_star . var_list TOK_SEMICOLON
+
+    TOK_IDENT  shift, and go to state 138
+
+    var_list    go to state 62
+    var_assign  go to state 63
+    var_name    go to state 64
+
+
+State 93
+
+   44 func_invoc: TOK_IDENT . TOK_LPAREN expr_list_star TOK_RPAREN
+   54 var_name: TOK_IDENT .
+
+    TOK_LPAREN  shift, and go to state 128
+
+    $default  reduce using rule 54 (var_name)
+
+
+State 94
+
+   13 rule: evn_pat_star TOK_ARROW statement_star .
+
+    $default  reduce using rule 13 (rule)
+
+
+State 95
+
+   78 evn_pat: evn_pat . TOK_PAT_STAR
+   79        | evn_pat . TOK_PAT_OR evn_pat
+   79        | evn_pat TOK_PAT_OR evn_pat .
+   80        | evn_pat . TOK_COLON evn_pat
+
+    TOK_PAT_STAR  shift, and go to state 56
+    TOK_COLON     shift, and go to state 58
+
+    $default  reduce using rule 79 (evn_pat)
+
+
+State 96
+
+   78 evn_pat: evn_pat . TOK_PAT_STAR
+   79        | evn_pat . TOK_PAT_OR evn_pat
+   80        | evn_pat . TOK_COLON evn_pat
+   80        | evn_pat TOK_COLON evn_pat .
+
+    TOK_PAT_STAR  shift, and go to state 56
+
+    $default  reduce using rule 80 (evn_pat)
+
+
+State 97
+
+   57 expr_star: TOK_MINUS . expr
+
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr         go to state 139
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 98
+
+   58 expr_star: TOK_LPAREN . expr TOK_RPAREN
+
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr         go to state 140
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 99
+
+   69 number: TOK_ULONGNUM .
+
+    $default  reduce using rule 69 (number)
+
+
+State 100
+
+   70 number: TOK_UINTNUM .
+
+    $default  reduce using rule 70 (number)
+
+
+State 101
+
+   71 number: TOK_DOUBLENUM .
+
+    $default  reduce using rule 71 (number)
+
+
+State 102
+
+   66 literal: TOK_STRCONST .
+
+    $default  reduce using rule 66 (literal)
+
+
+State 103
+
+   67 literal: TOK_TRUE .
+
+    $default  reduce using rule 67 (literal)
+
+
+State 104
+
+   68 literal: TOK_FALSE .
+
+    $default  reduce using rule 68 (literal)
+
+
+State 105
+
+   60 expr: func_invoc .
+
+    $default  reduce using rule 60 (expr)
+
+
+State 106
+
+   61 expr: ref_expr .
+   63 assign_expr: ref_expr . TOK_ASSIGN expr
+
+    TOK_ASSIGN  shift, and go to state 136
+
+    $default  reduce using rule 61 (expr)
+
+
+State 107
+
+   83 primitive_pat_star: primitive_pat TOK_BITOR expr_star .
+
+    $default  reduce using rule 83 (primitive_pat_star)
+
+
+State 108
+
+   56 expr_star: expr .
+
+    $default  reduce using rule 56 (expr_star)
+
+
+State 109
+
+   62 expr: assign_expr .
+
+    $default  reduce using rule 62 (expr)
+
+
+State 110
+
+   59 expr: lit_star .
+
+    $default  reduce using rule 59 (expr)
+
+
+State 111
+
+   64 lit_star: literal .
+
+    $default  reduce using rule 64 (lit_star)
+
+
+State 112
+
+   65 literal: number .
+
+    $default  reduce using rule 65 (literal)
+
+
+State 113
+
+   86 normal_event: event_name TOK_LPAREN evn_param_list_star . TOK_RPAREN
+
+    TOK_RPAREN  shift, and go to state 141
+
+
+State 114
+
+   19 func_decl: type_star TOK_IDENT TOK_LPAREN . formal_param_list_star TOK_RPAREN
+
+    TOK_VOID      shift, and go to state 11
+    TOK_STRING    shift, and go to state 12
+    TOK_LONG      shift, and go to state 13
+    TOK_INT       shift, and go to state 14
+    TOK_UNSIGNED  shift, and go to state 15
+    TOK_BOOL      shift, and go to state 16
+    TOK_BYTE      shift, and go to state 17
+    TOK_DOUBLE    shift, and go to state 18
+    TOK_SHORT     shift, and go to state 19
+    TOK_IDENT     shift, and go to state 46
+
+    $default  reduce using rule 24 (formal_param_list_star)
+
+    formal_param_list_star  go to state 142
+    formal_param_list       go to state 119
+    formal_param            go to state 120
+    class_name              go to state 37
+    type_star               go to state 121
+    type                    go to state 40
+    base_type               go to state 41
+
+
+State 115
+
+   52 var_list: var_list TOK_COMMA . var_name
+
+    TOK_IDENT  shift, and go to state 138
+
+    var_name  go to state 143
+
+
+State 116
+
+   49 var_dec: type_star var_list TOK_SEMICOLON .
+
+    $default  reduce using rule 49 (var_dec)
+
+
+State 117
+
+   53 var_assign: var_name TOK_ASSIGN . expr_star
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr_star    go to state 144
+    expr         go to state 108
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 118
+
+   15 event_dec: TOK_EVENT event_name TOK_LPAREN formal_param_list_star . TOK_RPAREN TOK_SEMICOLON
+
+    TOK_RPAREN  shift, and go to state 145
+
+
+State 119
+
+   25 formal_param_list_star: formal_param_list .
+   73 formal_param_list: formal_param_list . TOK_COMMA formal_param
+
+    TOK_COMMA  shift, and go to state 146
+
+    $default  reduce using rule 25 (formal_param_list_star)
+
+
+State 120
+
+   72 formal_param_list: formal_param .
+
+    $default  reduce using rule 72 (formal_param_list)
+
+
+State 121
+
+   74 formal_param: type_star . var_name
+
+    TOK_IDENT  shift, and go to state 138
+
+    var_name  go to state 147
+
+
+State 122
+
+   89 any_event: TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN .
+
+    $default  reduce using rule 89 (any_event)
+
+
+State 123
+
+   92 evn_param_list: evn_param_list TOK_COMMA . event_param
+
+    TOK_IDENT  shift, and go to state 68
+
+    event_param  go to state 148
+
+
+State 124
+
+   30 stmt_list: statement_star .
+
+    $default  reduce using rule 30 (stmt_list)
+
+
+State 125
+
+   28 com_stmt: TOK_LBRACE stmt_list . TOK_RBRACE
+   31 stmt_list: stmt_list . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_RBRACE     shift, and go to state 149
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 150
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 126
+
+   40 if_then_stmt: TOK_IF expr_star . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 151
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 127
+
+   41 ret_stmt: TOK_RETURN expr_star .
+
+    $default  reduce using rule 41 (ret_stmt)
+
+
+State 128
+
+   44 func_invoc: TOK_IDENT TOK_LPAREN . expr_list_star TOK_RPAREN
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    $default  reduce using rule 46 (expr_list)
+
+    func_invoc      go to state 105
+    expr_list_star  go to state 152
+    expr_list       go to state 153
+    var_name        go to state 89
+    ref_expr        go to state 106
+    expr_star       go to state 154
+    expr            go to state 108
+    assign_expr     go to state 109
+    lit_star        go to state 110
+    literal         go to state 111
+    number          go to state 112
+
+
+State 129
+
+   20 func_body: TOK_LBRACE func_body_inner TOK_RBRACE .
+
+    $default  reduce using rule 20 (func_body)
+
+
+State 130
+
+   22 func_body_inner: func_body_inner statement_star .
+
+    $default  reduce using rule 22 (func_body_inner)
+
+
+State 131
+
+   29 com_stmt: com_stmt TOK_SEMICOLON .
+
+    $default  reduce using rule 29 (com_stmt)
+
+
+State 132
+
+   39 if_then_else_stmt: if_then_stmt TOK_ELSE . statement_star
+
+    TOK_SEMICOLON  shift, and go to state 72
+    TOK_LBRACE     shift, and go to state 73
+    TOK_IF         shift, and go to state 74
+    TOK_RETURN     shift, and go to state 75
+    TOK_IDENT      shift, and go to state 93
+
+    statement_star     go to state 155
+    com_stmt_star      go to state 79
+    com_stmt           go to state 80
+    statement          go to state 81
+    if_then_else_stmt  go to state 82
+    if_then_stmt       go to state 83
+    ret_stmt           go to state 84
+    empty_stmt         go to state 85
+    func_invoc_stmt    go to state 86
+    func_invoc         go to state 87
+    var_name           go to state 89
+    ref_expr           go to state 90
+    assign_expr        go to state 91
+
+
+State 133
+
+   36 statement: ret_stmt TOK_SEMICOLON .
+
+    $default  reduce using rule 36 (statement)
+
+
+State 134
+
+   43 func_invoc_stmt: func_invoc TOK_SEMICOLON .
+
+    $default  reduce using rule 43 (func_invoc_stmt)
+
+
+State 135
+
+   23 func_body_inner: var_dec statement_star .
+
+    $default  reduce using rule 23 (func_body_inner)
+
+
+State 136
+
+   63 assign_expr: ref_expr TOK_ASSIGN . expr
+
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr         go to state 156
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 137
+
+   35 statement: assign_expr TOK_SEMICOLON .
+
+    $default  reduce using rule 35 (statement)
+
+
+State 138
+
+   54 var_name: TOK_IDENT .
+
+    $default  reduce using rule 54 (var_name)
+
+
+State 139
+
+   57 expr_star: TOK_MINUS expr .
+
+    $default  reduce using rule 57 (expr_star)
+
+
+State 140
+
+   58 expr_star: TOK_LPAREN expr . TOK_RPAREN
+
+    TOK_RPAREN  shift, and go to state 157
+
+
+State 141
+
+   86 normal_event: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN .
+
+    $default  reduce using rule 86 (normal_event)
+
+
+State 142
+
+   19 func_decl: type_star TOK_IDENT TOK_LPAREN formal_param_list_star . TOK_RPAREN
+
+    TOK_RPAREN  shift, and go to state 158
+
+
+State 143
+
+   52 var_list: var_list TOK_COMMA var_name .
+
+    $default  reduce using rule 52 (var_list)
+
+
+State 144
+
+   53 var_assign: var_name TOK_ASSIGN expr_star .
+
+    $default  reduce using rule 53 (var_assign)
+
+
+State 145
+
+   15 event_dec: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN . TOK_SEMICOLON
+
+    TOK_SEMICOLON  shift, and go to state 159
+
+
+State 146
+
+   73 formal_param_list: formal_param_list TOK_COMMA . formal_param
+
+    TOK_VOID      shift, and go to state 11
+    TOK_STRING    shift, and go to state 12
+    TOK_LONG      shift, and go to state 13
+    TOK_INT       shift, and go to state 14
+    TOK_UNSIGNED  shift, and go to state 15
+    TOK_BOOL      shift, and go to state 16
+    TOK_BYTE      shift, and go to state 17
+    TOK_DOUBLE    shift, and go to state 18
+    TOK_SHORT     shift, and go to state 19
+    TOK_IDENT     shift, and go to state 46
+
+    formal_param  go to state 160
+    class_name    go to state 37
+    type_star     go to state 121
+    type          go to state 40
+    base_type     go to state 41
+
+
+State 147
+
+   74 formal_param: type_star var_name .
+
+    $default  reduce using rule 74 (formal_param)
+
+
+State 148
+
+   92 evn_param_list: evn_param_list TOK_COMMA event_param .
+
+    $default  reduce using rule 92 (evn_param_list)
+
+
+State 149
+
+   28 com_stmt: TOK_LBRACE stmt_list TOK_RBRACE .
+
+    $default  reduce using rule 28 (com_stmt)
+
+
+State 150
+
+   31 stmt_list: stmt_list statement_star .
+
+    $default  reduce using rule 31 (stmt_list)
+
+
+State 151
+
+   40 if_then_stmt: TOK_IF expr_star statement_star .
+
+    $default  reduce using rule 40 (if_then_stmt)
+
+
+State 152
+
+   44 func_invoc: TOK_IDENT TOK_LPAREN expr_list_star . TOK_RPAREN
+
+    TOK_RPAREN  shift, and go to state 161
+
+
+State 153
+
+   45 expr_list_star: expr_list .
+   48 expr_list: expr_list . TOK_COMMA expr_star
+
+    TOK_COMMA  shift, and go to state 162
+
+    $default  reduce using rule 45 (expr_list_star)
+
+
+State 154
+
+   47 expr_list: expr_star .
+
+    $default  reduce using rule 47 (expr_list)
+
+
+State 155
+
+   39 if_then_else_stmt: if_then_stmt TOK_ELSE statement_star .
+
+    $default  reduce using rule 39 (if_then_else_stmt)
+
+
+State 156
+
+   63 assign_expr: ref_expr TOK_ASSIGN expr .
+
+    $default  reduce using rule 63 (assign_expr)
+
+
+State 157
+
+   58 expr_star: TOK_LPAREN expr TOK_RPAREN .
+
+    $default  reduce using rule 58 (expr_star)
+
+
+State 158
+
+   19 func_decl: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN .
+
+    $default  reduce using rule 19 (func_decl)
+
+
+State 159
+
+   15 event_dec: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON .
+
+    $default  reduce using rule 15 (event_dec)
+
+
+State 160
+
+   73 formal_param_list: formal_param_list TOK_COMMA formal_param .
+
+    $default  reduce using rule 73 (formal_param_list)
+
+
+State 161
+
+   44 func_invoc: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN .
+
+    $default  reduce using rule 44 (func_invoc)
+
+
+State 162
+
+   48 expr_list: expr_list TOK_COMMA . expr_star
+
+    TOK_MINUS      shift, and go to state 97
+    TOK_LPAREN     shift, and go to state 98
+    TOK_ULONGNUM   shift, and go to state 99
+    TOK_UINTNUM    shift, and go to state 100
+    TOK_DOUBLENUM  shift, and go to state 101
+    TOK_STRCONST   shift, and go to state 102
+    TOK_TRUE       shift, and go to state 103
+    TOK_FALSE      shift, and go to state 104
+    TOK_IDENT      shift, and go to state 93
+
+    func_invoc   go to state 105
+    var_name     go to state 89
+    ref_expr     go to state 106
+    expr_star    go to state 163
+    expr         go to state 108
+    assign_expr  go to state 109
+    lit_star     go to state 110
+    literal      go to state 111
+    number       go to state 112
+
+
+State 163
+
+   48 expr_list: expr_list TOK_COMMA expr_star .
+
+    $default  reduce using rule 48 (expr_list)

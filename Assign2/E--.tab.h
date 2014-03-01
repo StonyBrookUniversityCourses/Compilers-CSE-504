@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 2.5.  */
+/* A Bison parser, made by GNU Bison 2.7.12-4996.  */
 
 /* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,15 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+#ifndef YY_YY_E_PARSER_H_INCLUDED
+# define YY_YY_E_PARSER_H_INCLUDED
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 1
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -71,49 +80,46 @@
      TOK_RBRACE = 289,
      TOK_LPAREN = 290,
      TOK_RPAREN = 291,
-     TOK_IF = 292,
-     TOK_ELSE = 293,
-     TOK_CLASS = 294,
-     TOK_RETURN = 295,
-     TOK_EVENT = 296,
-     TOK_ANY = 297,
-     TOK_PRINT = 298,
-     TOK_ULONGNUM = 299,
-     TOK_UINTNUM = 300,
-     TOK_DOUBLENUM = 301,
-     TOK_VOID = 302,
-     TOK_STRING = 303,
-     TOK_STRCONST = 304,
-     TOK_INT = 305,
-     TOK_UNSIGNED = 306,
-     TOK_BOOL = 307,
-     TOK_BYTE = 308,
-     TOK_DOUBLE = 309,
-     TOK_SHORT = 310,
-     TOK_LONG = 311,
-     TOK_TRUE = 312,
-     TOK_FALSE = 313,
-     TOK_IDENT = 314
+     TOK_DOT = 292,
+     TOK_LBRACK = 293,
+     TOK_IF = 294,
+     TOK_ELSE = 295,
+     TOK_CLASS = 296,
+     TOK_RETURN = 297,
+     TOK_EVENT = 298,
+     TOK_ANY = 299,
+     TOK_PRINT = 300,
+     TOK_ULONGNUM = 301,
+     TOK_UINTNUM = 302,
+     TOK_DOUBLENUM = 303,
+     TOK_VOID = 304,
+     TOK_STRING = 305,
+     TOK_LONG = 306,
+     TOK_INT = 307,
+     TOK_UNSIGNED = 308,
+     TOK_BOOL = 309,
+     TOK_BYTE = 310,
+     TOK_DOUBLE = 311,
+     TOK_SHORT = 312,
+     TOK_STRCONST = 313,
+     TOK_TRUE = 314,
+     TOK_FALSE = 315,
+     TOK_IDENT = 316
    };
 #endif
-
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
 {
-
-/* Line 2068 of yacc.c  */
-#line 10 "E--_parser.y++"
-
-   char* cVal;
+/* Line 2053 of yacc.c  */
+#line 9 "E--_parser.y++"
+    char* cVal;
    unsigned int uVal;
-   double dblVal;
+   double dblVal; 
 
-
-
-/* Line 2068 of yacc.c  */
-#line 117 "E--_parser.H"
+/* Line 2053 of yacc.c  */
+#line 123 "E--_parser.H"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -122,4 +128,18 @@ typedef union YYSTYPE
 
 extern YYSTYPE yylval;
 
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void *YYPARSE_PARAM);
+#else
+int yyparse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void);
+#else
+int yyparse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
 
+#endif /* !YY_YY_E_PARSER_H_INCLUDED  */
