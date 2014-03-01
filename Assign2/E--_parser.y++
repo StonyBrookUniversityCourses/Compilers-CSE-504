@@ -69,7 +69,11 @@ ifc_decl_star: /* empty */ {
 	printf ("Error: %s\n", $2);	
 };
 
-ifc_decl: var_dec | event_dec_star | class_dec | func_decl | TOK_SEMICOLON /* Fill in the other rules */
+ifc_decl: var_dec 
+| event_dec_star 
+| class_dec 
+| func_decl_star
+| TOK_SEMICOLON /* Fill in the other rules */
 ;
 
 rule_star: rule
@@ -92,11 +96,24 @@ class_dec: TOK_CLASS class_name TOK_SEMICOLON {
 	prt("ClassDecl");
 };
 
-func_decl : type_star func_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON{
+func_decl_star: func_decl TOK_SEMICOLON | func_decl func_body{
+};
+
+func_decl : type_star func_name TOK_LPAREN formal_param_list_star TOK_RPAREN{
 	prt("FunctionDecl");
 };
 
-formal_param_list_star : formal_param_list {
+func_body: TOK_LBRACE func_body_inner TOK_RBRACE {
+	prt("FunctionBody");
+};
+
+func_body_inner: statement_star
+| func_body_inner statement_star
+| var_dec statement_star 
+;
+
+formal_param_list_star : /*empty*/
+| formal_param_list {
 	prt("FormalParamList");
 };
 
@@ -120,6 +137,7 @@ stmt_list: statement_star
 statement : empty_stmt
 | func_invoc_stmt
 | com_stmt_star
+| assign_expr TOK_SEMICOLON {prt("AssignStmt");}
 
 ;
 
@@ -147,11 +165,11 @@ var_dec: type_star var_list TOK_SEMICOLON
 
 var_list: var_name {prt("VariableDecl");}
 | var_assign
-| var_list TOK_COMMA var_name
+| var_list TOK_COMMA var_name{prt("VariableDecl");}
 ;
 
 var_assign: var_name TOK_ASSIGN expr_star {
-	prt("VariableDecliWithInit");
+	prt("VariableDeclWithInit");
 };
 
 var_name: TOK_IDENT
@@ -166,23 +184,29 @@ expr_star: expr;
 expr: lit_star
 | func_invoc
 | ref_expr
+| assign_expr
 ;
 
-
+assign_expr: ref_expr TOK_ASSIGN expr {
+	prt("Assignment");
+};
 
 
 lit_star:literal {
 	prt("Literal");
-	//:cout<<"Lit:"<<$1<<endl;
 };
 
-literal: TOK_ULONGNUM
-| TOK_UINTNUM 
-| TOK_DOUBLENUM
+literal: numbers
+| TOK_UMINUS numbers
 | TOK_STRCONST
 ;
-formal_param_list : /*empty*/
-| formal_param 
+
+numbers: TOK_ULONGNUM
+| TOK_UINTNUM 
+| TOK_DOUBLENUM
+;
+
+formal_param_list :formal_param 
 | formal_param_list TOK_COMMA formal_param
 ;
 
