@@ -45,7 +45,7 @@ using namespace std;
 %left		TOK_PLUS TOK_MINUS
 %left		TOK_MULT TOK_DIV TOK_MOD
 %right 		TOK_UMINUS
-/*%left		where is left brac*/
+%left		TOK_LBRACK
 %left		TOK_DOT
 %right		TOK_ELSE "then"
 %right		TOK_LPAREN 
@@ -61,10 +61,11 @@ specification		: ifc_decl_star rule_star { prt("Spec"); }
 				prt("Spec");
 			 };
 
-ifc_decl_star		: /* empty */ {  }
-			| ifc_decl_star ifc_decl {  }
+ifc_decl_star		: /* empty */ {}
+			| ifc_decl_star ifc_decl {}
 			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");
-				printf ("Error: %s\n", $2); };
+				printf ("Error: %s\n", $2);
+			};
 
 ifc_decl		: var_dec 
 			| event_dec_star 
@@ -87,7 +88,7 @@ event_dec 		: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN 
 
 class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); };
 
-func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{  };
+func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{};
 
 func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ prt("FunctionDecl"); };
 
@@ -109,6 +110,7 @@ com_stmt_star		: com_stmt { prt("CompoundStmt"); };
 
 com_stmt		: TOK_LBRACE stmt_list TOK_RBRACE
 			| com_stmt TOK_SEMICOLON
+;
 
 stmt_list		: statement_star 
 			| stmt_list statement_star
@@ -163,8 +165,30 @@ var_name		: TOK_IDENT
 ref_expr		: var_name { prt("RefExpr"); };
 
 expr_star		: expr
-			| TOK_MINUS expr { prt("-Expr"); }
-			| TOK_LPAREN expr TOK_RPAREN { prt("(Expr)"); };
+			| TOK_MINUS expr_star { prt("-Expr"); }
+			| TOK_NOT expr_star { prt("!Expr"); }
+			| TOK_BITNOT expr_star { prt("~Expr"); }
+			| expr_star TOK_BITXOR expr_star { prt("Expr ^ Expr"); }
+			| expr_star TOK_SHL expr_star { prt("Expr << Expr"); }
+			| expr_star TOK_LE expr_star { prt("Expr <= Expr"); }
+			| expr_star TOK_LT expr_star { prt("Expr < Expr"); }
+			| expr_star TOK_EQ expr_star { prt("Expr == Expr"); }
+			| expr_star TOK_GE expr_star { prt("Expr >= Expr"); }
+			| expr_star TOK_SHR expr_star { prt("Expr >> Expr"); }
+			| expr_star TOK_GT expr_star { prt("Expr > Expr"); }
+			| expr_star TOK_OR expr_star { prt("Expr || Expr"); }
+			| expr_star TOK_BITOR expr_star { prt("Expr | Expr"); }
+			| expr_star TOK_MINUS expr_star { prt("Expr - Expr"); }
+			| expr_star TOK_NE expr_star { prt("Expr != Expr"); }
+			| expr_star TOK_DIV expr_star { prt("Expr / Expr"); }
+			| expr_star TOK_MULT expr_star { prt("Expr * Expr"); }
+			| expr_star TOK_BITAND expr_star { prt("Expr & Expr"); }
+			| expr_star TOK_AND expr_star { prt("Expr && Expr"); }
+			| expr_star TOK_MOD expr_star { prt("Expr % Expr"); }
+			| expr_star TOK_PLUS expr_star { prt("Expr + Expr"); } 
+			| TOK_LPAREN expr_star TOK_RPAREN { prt("(Expr)"); }
+;
+
 
 expr			: lit_star
 			| func_invoc
@@ -172,7 +196,7 @@ expr			: lit_star
 			| assign_expr
 ;
 
-assign_expr		: ref_expr TOK_ASSIGN expr { prt("Assignment"); };
+assign_expr		: ref_expr TOK_ASSIGN expr_star { prt("Assignment"); };
 
 
 lit_star		:literal { prt("Literal"); };
@@ -194,7 +218,7 @@ formal_param_list 	:formal_param
 
 formal_param		: type_star var_name { prt("FormalParam"); };
 
-evn_pat_star		: evn_pat {  };
+evn_pat_star		: evn_pat {};
 
 
 evn_pat 		: primitive_pat_star
