@@ -190,9 +190,8 @@ ref_expr: var_name {
 };
 
 expr_star: expr
-| TOK_MINUS expr {
-	prt("-Expr");
-};
+| TOK_MINUS expr {prt("-Expr");}
+| TOK_LPAREN expr TOK_RPAREN {prt("(Expr)");};
 
 expr: lit_star
 | func_invoc
