@@ -138,8 +138,10 @@ statement : empty_stmt
 | func_invoc_stmt
 | com_stmt_star
 | assign_expr TOK_SEMICOLON {prt("AssignStmt");}
-
+| ret_stmt {prt("ReturnStmt");}
 ;
+
+ret_stmt: TOK_RETURN expr_star
 
 empty_stmt: /*empty statement*/ TOK_SEMICOLON
 ;
@@ -181,7 +183,7 @@ ref_expr: var_name {
 
 expr_star: expr
 | TOK_MINUS expr {
-	prt("-Expr")
+	prt("-Expr");
 };
 
 expr: lit_star
