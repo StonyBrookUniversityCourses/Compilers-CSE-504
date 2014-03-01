@@ -20,7 +20,7 @@ using namespace std;
 %token TOK_BITAND TOK_BITOR TOK_BITNOT TOK_BITXOR TOK_SHL TOK_SHR 
 %token TOK_GT TOK_LT TOK_GE TOK_LE TOK_EQ  TOK_NE TOK_AND TOK_OR TOK_NOT 
 %token TOK_COMMA TOK_ASSIGN TOK_SEMICOLON TOK_COLON TOK_ARROW
-%token TOK_LBRACE TOK_RBRACE TOK_LPAREN TOK_RPAREN
+%token TOK_LBRACE TOK_RBRACE TOK_LPAREN TOK_RPAREN TOK_DOT
 
 /* Key words */
 
@@ -32,14 +32,34 @@ using namespace std;
 
 %type<cVal> error
 /*********************   Precedence and Associativity    ********************/
-
-%left TOK_BITOR
+%nonassoc	TOK_ASSIGN
+%left		TOK_PAT_OR
+%left		TOK_COLON
+%left		TOK_PAT_STAR
+%right		TOK_PAT_NOT
+%left		TOK_OR
+%left		TOK_AND
+%right		TOK_NOT
+%nonassoc	TOK_EQ TOK_NE TOK_GT TOK_LT TOK_GE TOK_LE
+%left 		TOK_BITOR TOK_BITXOR
+%left		TOK_BITAND
+%right		TOK_BITNOT
+%left		TOK_SHL TOK_SHR
+%left		TOK_PLUS TOK_MINUS
+%left		TOK_MULT TOK_DIV TOK_MOD
+%right 		TOK_UMINUS
+/*%left		where is left brac*/
+%left		TOK_DOT
 /**************************************************************************/
 
 %start specification
 %%
 
 specification: ifc_decl_star rule_star {
+	prt("Spec");
+}
+|/*empty string*/ {	
+	errMsg("Must contain at least one rule");
 	prt("Spec");
 };
 
