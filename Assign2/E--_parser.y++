@@ -214,7 +214,7 @@ formal_param_list :formal_param
 | formal_param_list TOK_COMMA formal_param
 ;
 
-formal_param: type_star TOK_IDENT {
+formal_param: type_star var_name {
 	prt("FormalParam");
 };
 
