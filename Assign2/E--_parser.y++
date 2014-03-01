@@ -51,6 +51,8 @@ using namespace std;
 /*%left		where is left brac*/
 %left		TOK_DOT
 %right		TOK_ELSE "then"
+%right		TOK_LPAREN 
+%left		TOK_RPAREN
 /**************************************************************************/
 
 %start specification
@@ -100,7 +102,7 @@ class_dec: TOK_CLASS class_name TOK_SEMICOLON {
 func_decl_star: func_decl TOK_SEMICOLON | func_decl func_body{
 };
 
-func_decl : type_star func_name TOK_LPAREN formal_param_list_star TOK_RPAREN{
+func_decl : type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{
 	prt("FunctionDecl");
 };
 
@@ -138,7 +140,7 @@ statement : empty_stmt
 | func_invoc_stmt
 | com_stmt_star
 | assign_expr TOK_SEMICOLON {prt("AssignStmt");}
-| ret_stmt {prt("ReturnStmt");}
+| ret_stmt TOK_SEMICOLON {prt("ReturnStmt");}
 | if_then_stmt {prt("IfThenStmt");}		%prec "then"
 | if_then_else_stmt {prt("IfThenElseStmt");}
 ;
@@ -158,7 +160,7 @@ func_invoc_stmt: func_invoc TOK_SEMICOLON {
 	prt("FunctionInvocationStmt");
 };
 
-func_invoc: func_name TOK_LPAREN expr_list_star TOK_RPAREN {
+func_invoc: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN {
 	prt("FunctionInvocation");
 };
 
@@ -230,12 +232,13 @@ formal_param: type_star var_name {
 evn_pat_star: evn_pat {
 };
 
-evn_pat : primitive_pat_star | evn_negation evn_pat 
 
-evn_negation: TOK_NOT 
-| TOK_COLON 
-| TOK_PAT_OR 
-| TOK_MULT TOK_MULT
+evn_pat : primitive_pat_star
+| TOK_PAT_NOT evn_pat {prt("!EventPat");}
+| evn_pat TOK_PAT_STAR {prt("EventPat **");}
+| evn_pat TOK_PAT_OR evn_pat {prt("EventPat \\/ EventPat");}
+| evn_pat TOK_COLON evn_pat {prt("EventPat : EventPat");}
+| TOK_LPAREN evn_pat TOK_RPAREN {prt("(EventPat)");}
 ;
 
 primitive_pat_star: primitive_pat {prt("PrimitivePat");}
@@ -262,17 +265,14 @@ any_event: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
 evn_param_list_star : evn_param_list
 ;
 
-evn_param_list: /*empty*/
-| event_param
+evn_param_list: event_param
 | evn_param_list TOK_COMMA event_param
 ;
 
 event_param: TOK_IDENT{
 	prt("EventFormalParam");
-
 };
 
-func_name: TOK_IDENT;
 
 class_name: TOK_IDENT;
 
