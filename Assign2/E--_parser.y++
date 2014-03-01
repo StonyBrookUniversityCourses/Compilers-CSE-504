@@ -1,5 +1,4 @@
-%{
-#include <iostream>
+%{ #include <iostream>
 extern int yylex();
 extern void yyerror(const char *s);
 extern void errMsg(const char *s);
@@ -7,11 +6,9 @@ extern void errMsg(const char *s);
 using namespace std;
 %}
 
-%union{
-   char* cVal;
+%union{    char* cVal;
    unsigned int uVal;
-   double dblVal;
-};
+   double dblVal; };
 
 /* Operators */
 
@@ -24,277 +21,234 @@ using namespace std;
 
 /* Key words */
 
-%token 		TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
-%token 		TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
-%token 		TOK_VOID TOK_STRING TOK_LONG 
-%token 		TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
-%token<cVal> 	TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
+%token 						TOK_IF TOK_ELSE TOK_CLASS TOK_RETURN TOK_EVENT TOK_ANY TOK_PRINT 
+%token 						TOK_ULONGNUM TOK_UINTNUM TOK_DOUBLENUM 
+%token 						TOK_VOID TOK_STRING TOK_LONG 
+%token 						TOK_INT TOK_UNSIGNED TOK_BOOL TOK_BYTE TOK_DOUBLE TOK_SHORT
+%token<cVal> 					TOK_STRCONST TOK_TRUE TOK_FALSE TOK_IDENT
 
 %type<cVal> error
 /*********************   Precedence and Associativity    ********************/
-%nonassoc	TOK_ASSIGN
-%left		TOK_PAT_OR
-%left		TOK_COLON
-%left		TOK_PAT_STAR
-%right		TOK_PAT_NOT
-%left		TOK_OR
-%left		TOK_AND
-%right		TOK_NOT
-%nonassoc	TOK_EQ TOK_NE TOK_GT TOK_LT TOK_GE TOK_LE
-%left 		TOK_BITOR TOK_BITXOR
-%left		TOK_BITAND
-%right		TOK_BITNOT
-%left		TOK_SHL TOK_SHR
-%left		TOK_PLUS TOK_MINUS
-%left		TOK_MULT TOK_DIV TOK_MOD
-%right 		TOK_UMINUS
-/*%left		where is left brac*/
-%left		TOK_DOT
-%right		TOK_ELSE "then"
-%right		TOK_LPAREN 
-%left		TOK_RPAREN
+%nonassoc					TOK_ASSIGN
+%left						TOK_PAT_OR
+%left						TOK_COLON
+%left						TOK_PAT_STAR
+%right						TOK_PAT_NOT
+%left						TOK_OR
+%left						TOK_AND
+%right						TOK_NOT
+%nonassoc					TOK_EQ TOK_NE TOK_GT TOK_LT TOK_GE TOK_LE
+%left 						TOK_BITOR TOK_BITXOR
+%left						TOK_BITAND
+%right						TOK_BITNOT
+%left						TOK_SHL TOK_SHR
+%left						TOK_PLUS TOK_MINUS
+%left						TOK_MULT TOK_DIV TOK_MOD
+%right 						TOK_UMINUS
+/*%left						where is left brac*/
+%left						TOK_DOT
+%right						TOK_ELSE "then"
+%right						TOK_LPAREN 
+%left						TOK_RPAREN
 /**************************************************************************/
 
 %start specification
 %%
 
-specification: ifc_decl_star rule_star {prt("Spec");}
-| /*empty string*/ {	
-	errMsg("Must contain at least one rule");
-	prt("Spec");
-};
+specification		: ifc_decl_star rule_star { prt("Spec"); }
+			| /*empty string*/ { 
+				errMsg("Must contain at least one rule");
+				prt("Spec");
+			 };
 
-ifc_decl_star: /* empty */ {
-}
-| ifc_decl_star ifc_decl {}
-| ifc_decl_star error TOK_SEMICOLON {
-	errMsg("Syntax error, expecting a declaration");
-	printf ("Error: %s\n", $2);	
-};
+ifc_decl_star		: /* empty */ {  }
+			| ifc_decl_star ifc_decl {  }
+			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");
+				printf ("Error: %s\n", $2); };
 
-ifc_decl: var_dec 
-| event_dec_star 
-| class_dec 
-| func_decl_star
-| TOK_SEMICOLON /* Fill in the other rules */
+ifc_decl		: var_dec 
+			| event_dec_star 
+			| class_dec 
+			| func_decl_star
+			| TOK_SEMICOLON /* Fill in the other rules */
 ;
 
-rule_star: rule
-| rule_star rule
+rule_star		: rule
+			| rule_star rule
 ;
 
-rule : evn_pat_star TOK_ARROW statement_star {
-	prt("Rule");
-};
+rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); };
 
 
-event_dec_star: event_dec {
-	prt("EventDecl");
-};
+event_dec_star		: event_dec { prt("EventDecl"); };
 
-event_dec : TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+event_dec 		: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
 ;
 
-class_dec: TOK_CLASS class_name TOK_SEMICOLON {
-	prt("ClassDecl");
-};
+class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); };
 
-func_decl_star: func_decl TOK_SEMICOLON | func_decl func_body{
-};
+func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{  };
 
-func_decl : type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{
-	prt("FunctionDecl");
-};
+func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ prt("FunctionDecl"); };
 
-func_body: TOK_LBRACE func_body_inner TOK_RBRACE {
-	prt("FunctionBody");
-};
+func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { prt("FunctionBody"); };
 
-func_body_inner: statement_star
-| func_body_inner statement_star
-| var_dec statement_star 
+func_body_inner		: statement_star
+			| func_body_inner statement_star
+			| var_dec statement_star 
 ;
 
-formal_param_list_star : /*empty*/
-| formal_param_list {
-	prt("FormalParamList");
-};
+formal_param_list_star 	: /*empty*/
+			| formal_param_list { prt("FormalParamList"); };
 
-statement_star: statement
+statement_star		: statement
 ;
 
-com_stmt_star: com_stmt {
-	prt("CompoundStmt");
-};
+com_stmt_star		: com_stmt { prt("CompoundStmt"); };
 
 
-com_stmt: TOK_LBRACE stmt_list TOK_RBRACE
-| com_stmt TOK_SEMICOLON
+com_stmt		: TOK_LBRACE stmt_list TOK_RBRACE
+			| com_stmt TOK_SEMICOLON
 
-stmt_list: statement_star 
-| stmt_list statement_star
+stmt_list		: statement_star 
+			| stmt_list statement_star
 ;
 
 
-statement : empty_stmt
-| func_invoc_stmt
-| com_stmt_star
-| assign_expr TOK_SEMICOLON {prt("AssignStmt");}
-| ret_stmt TOK_SEMICOLON {prt("ReturnStmt");}
-| if_then_stmt {prt("IfThenStmt");}		%prec "then"
-| if_then_else_stmt {prt("IfThenElseStmt");}
+statement 		: empty_stmt
+			| func_invoc_stmt
+			| com_stmt_star
+			| assign_expr TOK_SEMICOLON { prt("AssignStmt"); }
+			| ret_stmt TOK_SEMICOLON { prt("ReturnStmt"); }
+			| if_then_stmt { prt("IfThenStmt"); }						%prec "then"
+			| if_then_else_stmt { prt("IfThenElseStmt"); }
 ;
 
-if_then_else_stmt: if_then_stmt TOK_ELSE statement_star
+if_then_else_stmt	: if_then_stmt TOK_ELSE statement_star
 ;
 
-if_then_stmt: TOK_IF expr_star statement_star
+if_then_stmt		: TOK_IF expr_star statement_star
 ;
 
-ret_stmt: TOK_RETURN expr_star
+ret_stmt		: TOK_RETURN expr_star
 
-empty_stmt: /*empty statement*/ TOK_SEMICOLON
+empty_stmt		: /*empty statement*/ TOK_SEMICOLON
 ;
 
-func_invoc_stmt: func_invoc TOK_SEMICOLON {
-	prt("FunctionInvocationStmt");
-};
+func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); };
 
-func_invoc: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN {
-	prt("FunctionInvocation");
-};
+func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); };
 
-expr_list_star: expr_list 
+expr_list_star		: expr_list 
 ;
 
-expr_list: /*empty*/
-| expr_star
-| expr_list TOK_COMMA expr_star
+expr_list		: /*empty*/
+			| expr_star
+			| expr_list TOK_COMMA expr_star
 ;
 
-var_dec: type_star var_list TOK_SEMICOLON
+var_dec			: type_star var_list TOK_SEMICOLON
 ;
 
-var_list: var_name {prt("VariableDecl");}
-| var_assign
-| var_list TOK_COMMA var_name{prt("VariableDecl");}
+var_list		: var_name { prt("VariableDecl"); }
+			| var_assign
+			| var_list TOK_COMMA var_name{ prt("VariableDecl"); }
 ;
 
-var_assign: var_name TOK_ASSIGN expr_star {
-	prt("VariableDeclWithInit");
-};
+var_assign		: var_name TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); };
 
-var_name: TOK_IDENT
+var_name		: TOK_IDENT
 ;
 
-ref_expr: var_name {
-	prt("RefExpr");
-};
+ref_expr		: var_name { prt("RefExpr"); };
 
-expr_star: expr
-| TOK_MINUS expr {prt("-Expr");}
-| TOK_LPAREN expr TOK_RPAREN {prt("(Expr)");};
+expr_star		: expr
+			| TOK_MINUS expr { prt("-Expr"); }
+			| TOK_LPAREN expr TOK_RPAREN { prt("(Expr)"); };
 
-expr: lit_star
-| func_invoc
-| ref_expr
-| assign_expr
+expr			: lit_star
+			| func_invoc
+			| ref_expr
+			| assign_expr
 ;
 
-assign_expr: ref_expr TOK_ASSIGN expr {
-	prt("Assignment");
-};
+assign_expr		: ref_expr TOK_ASSIGN expr { prt("Assignment"); };
 
 
-lit_star:literal {
-	prt("Literal");
-};
+lit_star		:literal { prt("Literal"); };
 
-literal: number 
-| TOK_STRCONST
-| TOK_TRUE
-| TOK_FALSE
+literal			: number 
+			| TOK_STRCONST
+			| TOK_TRUE
+			| TOK_FALSE
 ;
 
-number: TOK_ULONGNUM
-| TOK_UINTNUM 
-| TOK_DOUBLENUM
+number			: TOK_ULONGNUM
+			| TOK_UINTNUM 
+			| TOK_DOUBLENUM
 ;
 
-formal_param_list :formal_param 
-| formal_param_list TOK_COMMA formal_param
+formal_param_list 	:formal_param 
+			| formal_param_list TOK_COMMA formal_param
 ;
 
-formal_param: type_star var_name {
-	prt("FormalParam");
-};
+formal_param		: type_star var_name { prt("FormalParam"); };
 
-evn_pat_star: evn_pat {
-};
+evn_pat_star		: evn_pat {  };
 
 
-evn_pat : primitive_pat_star
-| TOK_PAT_NOT evn_pat {prt("!EventPat");}
-| evn_pat TOK_PAT_STAR {prt("EventPat **");}
-| evn_pat TOK_PAT_OR evn_pat {prt("EventPat \\/ EventPat");}
-| evn_pat TOK_COLON evn_pat {prt("EventPat : EventPat");}
-| TOK_LPAREN evn_pat TOK_RPAREN {prt("(EventPat)");}
+evn_pat 		: primitive_pat_star
+			| TOK_PAT_NOT evn_pat 	{ prt("!EventPat"); }
+			| evn_pat TOK_PAT_STAR { prt("EventPat **"); }
+			| evn_pat TOK_PAT_OR evn_pat { prt("EventPat \\/ EventPat"); }
+			| evn_pat TOK_COLON evn_pat { prt("EventPat : EventPat"); }
+			| TOK_LPAREN evn_pat TOK_RPAREN { prt("(EventPat)"); }
 ;
 
-primitive_pat_star: primitive_pat {prt("PrimitivePat");}
-| primitive_pat TOK_BITOR expr_star {
-	prt("PrimitivePatWithCond");
-};
+primitive_pat_star	: primitive_pat { prt("PrimitivePat"); }
+			| primitive_pat TOK_BITOR expr_star { prt("PrimitivePatWithCond"); };
 
-primitive_pat : normal_event
-| any_event_star
+primitive_pat 		: normal_event
+			| any_event_star
 ;
 
-normal_event: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN {
-	prt("NormalEvent");
-};
+normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); };
  /*support bit or condition*/
 
-any_event_star: any_event {
-	prt("anyEvent");
-}
+any_event_star		: any_event { prt("anyEvent"); }
 
-any_event: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
+any_event		: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
 ;
 
-evn_param_list_star : evn_param_list
+evn_param_list_star 	: evn_param_list
 ;
 
-evn_param_list: event_param
-| evn_param_list TOK_COMMA event_param
+evn_param_list		: event_param
+			| evn_param_list TOK_COMMA event_param
 ;
 
-event_param: TOK_IDENT{
-	prt("EventFormalParam");
-};
+event_param		: TOK_IDENT{ prt("EventFormalParam"); };
 
 
-class_name: TOK_IDENT;
+class_name		: TOK_IDENT;
 
-event_name : TOK_IDENT;
+event_name 		: TOK_IDENT;
 
-type_star : type {
-	prt("Type");
-};
+type_star 		: type { prt("Type"); };
 
 
 
-type: base_type
-| TOK_UNSIGNED base_type
-| class_name
+type			: base_type
+			| TOK_UNSIGNED base_type
+			| class_name
 
-base_type:TOK_VOID 
-| TOK_STRING 
-| TOK_INT 
-| TOK_BOOL 
-| TOK_BYTE 
-| TOK_DOUBLE 
-| TOK_SHORT
-| TOK_LONG
+base_type		:TOK_VOID 
+			| TOK_STRING 
+			| TOK_INT 
+			| TOK_BOOL 
+			| TOK_BYTE 
+			| TOK_DOUBLE 
+			| TOK_SHORT
+			| TOK_LONG
 ;
 %%
