@@ -179,7 +179,10 @@ ref_expr: var_name {
 	prt("RefExpr");
 };
 
-expr_star: expr;
+expr_star: expr
+| TOK_MINUS expr {
+	prt("-Expr")
+};
 
 expr: lit_star
 | func_invoc
@@ -196,12 +199,13 @@ lit_star:literal {
 	prt("Literal");
 };
 
-literal: numbers
-| TOK_UMINUS numbers
+literal: number 
 | TOK_STRCONST
+| TOK_TRUE
+| TOK_FALSE
 ;
 
-numbers: TOK_ULONGNUM
+number: TOK_ULONGNUM
 | TOK_UINTNUM 
 | TOK_DOUBLENUM
 ;
@@ -225,9 +229,7 @@ evn_negation: TOK_NOT
 | TOK_MULT TOK_MULT
 ;
 
-primitive_pat_star: primitive_pat {
-	prt("PrimitivePat");
-}
+primitive_pat_star: primitive_pat {prt("PrimitivePat");}
 | primitive_pat TOK_BITOR expr_star {
 	prt("PrimitivePatWithCond");
 };
