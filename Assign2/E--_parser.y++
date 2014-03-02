@@ -87,9 +87,12 @@ event_dec_star		: event_dec { prt("EventDecl"); }
 ;
 
 event_dec 		: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
+			| TOK_EVENT event_name TOK_LPAREN formal_param_list_star error TOK_SEMICOLON { errMsg("Error in parsing event parameters, may be a missing \")\""); }
+			| TOK_EVENT error TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON { errMsg("Expected an event name"); }
 ;
 
 class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); }
+			| TOK_CLASS error TOK_SEMICOLON { prt("Syntax error in class declaration: expecting class name"); }
 ;
 
 func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{}
@@ -168,10 +171,12 @@ var_dec			: type_star var_list TOK_SEMICOLON
 
 var_list		: var_name { prt("VariableDecl"); }
 			| var_assign
-			| var_list TOK_COMMA var_name{ prt("VariableDecl"); }
+			| var_list TOK_COMMA var_name { prt("VariableDecl"); }
+			| error TOK_COMMA var_name { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
 var_assign		: var_name TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
+			| error TOK_ASSIGN expr_star { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
 var_name		: TOK_IDENT
@@ -232,10 +237,10 @@ number			: TOK_ULONGNUM
 
 formal_param_list 	: formal_param 
 			| formal_param_list TOK_COMMA formal_param
+			| formal_param error formal_param { errMsg("Error encountered while parsing event parameters"); }
 ;
 
 formal_param		: type_star var_name { prt("FormalParam"); }
-			| type_star error { errMsg("Error in event declaration, expecting formal parameters"); }
 			| type_star error { errMsg("Error in event declaration, expecting formal parameters"); }
 ;
 
