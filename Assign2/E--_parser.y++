@@ -166,13 +166,15 @@ expr_list		: expr_star
 var_dec_list		: var_dec
 			| var_dec_list var_dec
 ;
-var_dec			: type_star var_list TOK_SEMICOLON
+var_dec			: type_star var_list TOK_SEMICOLON 
+			| error { errMsg("Error in variable declaration, may be a missing type name or identifier"); }
 ;
 
 var_list		: var_name { prt("VariableDecl"); }
 			| var_assign
 			| var_list TOK_COMMA var_name { prt("VariableDecl"); }
 			| error TOK_COMMA var_name { yyerror("Error in variable declaration, may be a missing identifier"); }
+			| var_list error { errMsg("Error in variable declaration, may be a missing \",\" or identifier"); }
 ;
 
 var_assign		: var_name TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
