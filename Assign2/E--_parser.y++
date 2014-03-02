@@ -65,8 +65,7 @@ specification		: ifc_decl_star rule_star { prt("Spec"); }
 
 ifc_decl_star		: /* empty */ {}
 			| ifc_decl_star ifc_decl {}
-			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");
-			}
+			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");}
 ;
 
 ifc_decl		: var_dec 
@@ -80,25 +79,25 @@ rule_star		: rule
 			| rule_star rule
 ;
 
-rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); };
-
+rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); }
+;
 
 event_dec_star		: event_dec { prt("EventDecl"); }
 ;
 
 event_dec 		: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
-			| TOK_EVENT event_name TOK_LPAREN formal_param_list_star error TOK_SEMICOLON { errMsg("Error in parsing event parameters, may be a missing \")\""); }
 			| TOK_EVENT error TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON { errMsg("Expected an event name"); }
 ;
 
 class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); }
-			| TOK_CLASS error TOK_SEMICOLON { prt("Syntax error in class declaration: expecting class name"); }
+			| TOK_CLASS error { errMsg("Syntax error in class declaration: expecting class name"); }
 ;
 
 func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{}
 ;
 
 func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ prt("FunctionDecl"); }
+			| type_star error TOK_LPAREN formal_param_list_star TOK_RPAREN { errMsg("Expecting a function declaration -- may be a missing function name"); }
 ;
 
 func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { prt("FunctionBody"); }
@@ -135,6 +134,7 @@ statement 		: empty_stmt
 			| ret_stmt TOK_SEMICOLON { prt("ReturnStmt"); }
 			| if_then_stmt { prt("IfThenStmt"); }			%prec "then"
 			| if_then_else_stmt { prt("IfThenElseStmt"); }
+			| error TOK_SEMICOLON { errMsg("Syntax error while parsing a statement"); }
 ;
 
 if_then_else_stmt	: if_then_stmt TOK_ELSE statement_star
@@ -166,14 +166,13 @@ expr_list		: expr_star
 var_dec_list		: var_dec
 			| var_dec_list var_dec
 ;
-var_dec			: type_star var_list TOK_SEMICOLON 
-			| error { errMsg("Error in variable declaration, may be a missing type name or identifier"); }
+var_dec			: type_star var_list TOK_SEMICOLON
+			| type_star TOK_COMMA var_list TOK_SEMICOLON { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
 var_list		: var_name { prt("VariableDecl"); }
 			| var_assign
 			| var_list TOK_COMMA var_name { prt("VariableDecl"); }
-			| error TOK_COMMA var_name { yyerror("Error in variable declaration, may be a missing identifier"); }
 			| var_list error { errMsg("Error in variable declaration, may be a missing \",\" or identifier"); }
 ;
 
@@ -243,7 +242,7 @@ formal_param_list 	: formal_param
 ;
 
 formal_param		: type_star var_name { prt("FormalParam"); }
-			| type_star error { errMsg("Error in event declaration, expecting formal parameters"); }
+			| type_star error { errMsg("Syntax error in formal parameter declaration"); }
 ;
 
 evn_pat_star		: evn_pat {}
@@ -267,7 +266,6 @@ primitive_pat 		: normal_event
 ;
 
 normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); }
-			| event_name TOK_LPAREN evn_param_list_star error { errMsg("Error in parsing event parameters, may be a missing i\")\""); }
 ;
 
 any_event_star		: any_event { prt("anyEvent"); }
