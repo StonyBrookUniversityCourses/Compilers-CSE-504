@@ -1,0 +1,5 @@
+assumptions
+1. Event Invocation can have empty formal parameters
+2. TOK_UMINUS is not returned for -Expr instead TOK_MINUS is returned.
+3. For EventPat TOK_PAT_NOT is not returned by lexer instead TOK_NOT is returned.
+
