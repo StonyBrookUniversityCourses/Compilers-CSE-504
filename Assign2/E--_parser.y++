@@ -29,6 +29,7 @@ using namespace std;
 
 %type<cVal> error
 /*********************   Precedence and Associativity    ********************/
+%right		TOK_SEMICOLON "reduce"
 %nonassoc	TOK_ASSIGN
 %left		TOK_PAT_OR
 %left		TOK_COLON
@@ -94,9 +95,8 @@ func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ 
 
 func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { prt("FunctionBody"); };
 
-func_body_inner		: statement_star
-			| func_body_inner statement_star
-			| var_dec statement_star 
+func_body_inner		: stmt_list
+			| var_dec_list stmt_list 
 ;
 
 formal_param_list_star 	: /*empty*/
@@ -105,11 +105,12 @@ formal_param_list_star 	: /*empty*/
 statement_star		: statement
 ;
 
-com_stmt_star		: com_stmt { prt("CompoundStmt"); };
+com_stmt_star		: com_stmt { prt("CompoundStmt"); }	%prec "reduce"
+;
 
 
 com_stmt		: TOK_LBRACE stmt_list TOK_RBRACE
-			| com_stmt TOK_SEMICOLON
+			| com_stmt TOK_SEMICOLON{}	
 ;
 
 stmt_list		: statement_star 
@@ -122,7 +123,7 @@ statement 		: empty_stmt
 			| com_stmt_star
 			| assign_expr TOK_SEMICOLON { prt("AssignStmt"); }
 			| ret_stmt TOK_SEMICOLON { prt("ReturnStmt"); }
-			| if_then_stmt { prt("IfThenStmt"); }						%prec "then"
+			| if_then_stmt { prt("IfThenStmt"); }			%prec "then"
 			| if_then_else_stmt { prt("IfThenElseStmt"); }
 ;
 
@@ -141,14 +142,18 @@ func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); };
 
 func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); };
 
-expr_list_star		: expr_list 
+expr_list_star		: expr_list {}
+			| /*empty*/ {}
 ;
 
-expr_list		: /*empty*/
-			| expr_star
+expr_list		: expr_star
 			| expr_list TOK_COMMA expr_star
 ;
 
+
+var_dec_list		: var_dec
+			| var_dec_list var_dec
+;
 var_dec			: type_star var_list TOK_SEMICOLON
 ;
 
@@ -222,7 +227,7 @@ evn_pat_star		: evn_pat {};
 
 
 evn_pat 		: primitive_pat_star
-			| TOK_PAT_NOT evn_pat 	{ prt("!EventPat"); }
+			| TOK_NOT evn_pat 	{ prt("!EventPat"); }
 			| evn_pat TOK_PAT_STAR { prt("EventPat **"); }
 			| evn_pat TOK_PAT_OR evn_pat { prt("EventPat \\/ EventPat"); }
 			| evn_pat TOK_COLON evn_pat { prt("EventPat : EventPat"); }
@@ -245,6 +250,7 @@ any_event		: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
 ;
 
 evn_param_list_star 	: evn_param_list
+			| /*empty*/
 ;
 
 evn_param_list		: event_param
