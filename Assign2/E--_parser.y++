@@ -60,13 +60,14 @@ specification		: ifc_decl_star rule_star { prt("Spec"); }
 			| /*empty string*/ { 
 				errMsg("Must contain at least one rule");
 				prt("Spec");
-			 };
+			 }
+;
 
 ifc_decl_star		: /* empty */ {}
 			| ifc_decl_star ifc_decl {}
 			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");
-				printf ("Error: %s\n", $2);
-			};
+			}
+;
 
 ifc_decl		: var_dec 
 			| event_dec_star 
@@ -82,25 +83,31 @@ rule_star		: rule
 rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); };
 
 
-event_dec_star		: event_dec { prt("EventDecl"); };
+event_dec_star		: event_dec { prt("EventDecl"); }
+;
 
 event_dec 		: TOK_EVENT event_name TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON
 ;
 
-class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); };
+class_dec		: TOK_CLASS class_name TOK_SEMICOLON { prt("ClassDecl"); }
+;
 
-func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{};
+func_decl_star		: func_decl TOK_SEMICOLON | func_decl func_body{}
+;
 
-func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ prt("FunctionDecl"); };
+func_decl 		: type_star TOK_IDENT TOK_LPAREN formal_param_list_star TOK_RPAREN{ prt("FunctionDecl"); }
+;
 
-func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { prt("FunctionBody"); };
+func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { prt("FunctionBody"); }
+;
 
 func_body_inner		: stmt_list
 			| var_dec_list stmt_list 
 ;
 
 formal_param_list_star 	: /*empty*/
-			| formal_param_list { prt("FormalParamList"); };
+			| formal_param_list { prt("FormalParamList"); }
+;
 
 statement_star		: statement
 ;
@@ -138,9 +145,11 @@ ret_stmt		: TOK_RETURN expr_star
 empty_stmt		: /*empty statement*/ TOK_SEMICOLON
 ;
 
-func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); };
+func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); }
+;
 
-func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); };
+func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); }
+;
 
 expr_list_star		: expr_list {}
 			| /*empty*/ {}
@@ -162,12 +171,14 @@ var_list		: var_name { prt("VariableDecl"); }
 			| var_list TOK_COMMA var_name{ prt("VariableDecl"); }
 ;
 
-var_assign		: var_name TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); };
+var_assign		: var_name TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
+;
 
 var_name		: TOK_IDENT
 ;
 
-ref_expr		: var_name { prt("RefExpr"); };
+ref_expr		: var_name { prt("RefExpr"); }
+;
 
 expr_star		: expr
 			| TOK_MINUS expr_star { prt("-Expr"); }
@@ -201,10 +212,12 @@ expr			: lit_star
 			| assign_expr
 ;
 
-assign_expr		: ref_expr TOK_ASSIGN expr_star { prt("Assignment"); };
+assign_expr		: ref_expr TOK_ASSIGN expr_star { prt("Assignment"); }
+;
 
 
-lit_star		:literal { prt("Literal"); };
+lit_star		:literal { prt("Literal"); }
+;
 
 literal			: number 
 			| TOK_STRCONST
@@ -217,13 +230,17 @@ number			: TOK_ULONGNUM
 			| TOK_DOUBLENUM
 ;
 
-formal_param_list 	:formal_param 
+formal_param_list 	: formal_param 
 			| formal_param_list TOK_COMMA formal_param
 ;
 
-formal_param		: type_star var_name { prt("FormalParam"); };
+formal_param		: type_star var_name { prt("FormalParam"); }
+			| type_star error { errMsg("Error in event declaration, expecting formal parameters"); }
+			| type_star error { errMsg("Error in event declaration, expecting formal parameters"); }
+;
 
-evn_pat_star		: evn_pat {};
+evn_pat_star		: evn_pat {}
+;
 
 
 evn_pat 		: primitive_pat_star
@@ -235,14 +252,16 @@ evn_pat 		: primitive_pat_star
 ;
 
 primitive_pat_star	: primitive_pat { prt("PrimitivePat"); }
-			| primitive_pat TOK_BITOR expr_star { prt("PrimitivePatWithCond"); };
+			| primitive_pat TOK_BITOR expr_star { prt("PrimitivePatWithCond"); }
+;
 
 primitive_pat 		: normal_event
 			| any_event_star
 ;
 
-normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); };
- /*support bit or condition*/
+normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); }
+			| event_name TOK_LPAREN evn_param_list_star error { errMsg("Error in parsing event parameters, may be a missing i\")\""); }
+;
 
 any_event_star		: any_event { prt("anyEvent"); }
 
@@ -257,14 +276,16 @@ evn_param_list		: event_param
 			| evn_param_list TOK_COMMA event_param
 ;
 
-event_param		: TOK_IDENT{ prt("EventFormalParam"); };
+event_param		: TOK_IDENT{ prt("EventFormalParam"); }
+;
 
 
 class_name		: TOK_IDENT;
 
 event_name 		: TOK_IDENT;
 
-type_star 		: type { prt("Type"); };
+type_star 		: type { prt("Type"); }
+;
 
 
 
