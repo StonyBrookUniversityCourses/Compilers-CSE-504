@@ -1,0 +1,182 @@
+%option noyywrap
+%option never-interactive
+
+%{
+#include "E--_lexer.tab.h"
+#include <iostream>
+
+using namespace std;
+
+const char* yyfilename="";
+int yylinenum=1;
+int convertToHexa(char ch);
+
+%}
+/* Definitions */
+
+DECIMAL_DIGIT  [0-9]
+UINTNUM		   {DECIMAL_DIGIT}+
+LOWER_CASECHARS	[a-z]
+UPPER_CASECHARS	[A-Z]
+HEX 	[0-9A-Fa-f]
+UNDERSCORE "_"
+LETTER ({LOWER_CASECHARS}|{UPPER_CASECHARS})
+
+NEWLINE \n\r|\n|\r
+
+%%
+{NEWLINE} 		{yylinenum++;}
+\t|" "			{/*No ACTION*/}
+"# "({DECIMAL_DIGIT}+).*  {
+				yylinenum = 0;
+ 				int i= 2;
+ 				for(;yytext[i]!=' ';i++) {
+ 					yylinenum = yylinenum*10 + (int)yytext[i] - 48;
+ 				}
+ 				int startPos = i+2;
+ 				for(i=i+2;yytext[i]!='"';i++) {
+	 				/*if(yytext[i] == '/'){    //Commenting the code as user should get full file path instead of just the filename. This is also according to the specification which says that filename is between the code and says nothing about breaking it with respect to /
+	 					startPos = i+1;
+	 				}*/
+				}
+				int endPos = i-1;
+				char* filename = new char[endPos-startPos+1];
+ 				for(i=startPos;i<=endPos;i++) {
+ 					filename[i-startPos] = yytext[i];
+ 				}
+ 				filename[i-startPos] = '\0';
+ 				yyfilename = filename;
+ 				yylinenum = yylinenum-1;
+			}
+"\""([^"\""\n]|("\\\""))*?("\""|\n) 	{
+						 int j = 0;
+						 if(yytext[yyleng-1] == 10){
+							yylinenum++;
+						 } 
+						 char* str = new char[yyleng-2];
+						 for(int i=1;i<yyleng;i++,j++){
+						 char ch = yytext[i];
+						 if(ch == '\n' || ch == '"'){
+						   break;
+						 }
+						 if(ch == '\\') {
+						   i++;
+						   switch(yytext[i]){
+						     case 'n' : ch = '\n';
+						                break;
+						     case 't' : ch = '\t';
+						                break;
+						     case 'r' : ch = '\r';
+						                break;
+					   	     case '"' : ch = '"';
+							        break;
+						     case '\\' : ch = '\\';
+						  	         break;
+						     case 'x' : {
+						   	    	 int firstHexa = convertToHexa(yytext[++i]);
+								 int secondHexa = convertToHexa(yytext[++i]);
+								 ch = firstHexa*16 + secondHexa;
+								 break;
+								}
+						     default : i--;
+						    }
+						}
+					        str[j] = ch;
+					       }
+					       str[j] = '\0';
+					       yylval.cVal = str; 
+					       return TOK_STRCONST;
+							}
+ /**************** Recognize operators ****************/
+
+":"	{ return TOK_COLON; }
+","	{ return TOK_COMMA; }
+"."	{ return TOK_DOT; }
+";"	{ return TOK_SEMICOLON; }
+"["	{ return TOK_LBRACK; }
+"]"	{ return TOK_RBRACK; }
+"("	{ return TOK_LPAREN; }
+")"	{ return TOK_RPAREN; }
+"{"	{ return TOK_LBRACE; }
+"}"	{ return TOK_RBRACE; }
+"+"	{ return TOK_PLUS; }
+"-"	{ return TOK_MINUS; }
+"*"	{ return TOK_MULT; }
+"/"	{ return TOK_DIV; }
+"="	{ return TOK_ASSIGN; }
+"&&"	{ return TOK_AND; }
+"||"	{ return TOK_OR; }
+"!"	{ return TOK_NOT; }
+"->"	{ return TOK_ARROW; }
+"?"	{ return TOK_QMARK; }
+">"	{ return TOK_GT; }
+"<"	{ return TOK_LT; }
+"=="	{ return TOK_EQ; }
+"!="	{ return TOK_NE; }
+">="	{ return TOK_GE; }
+"<="	{ return TOK_LE; }
+"%"	{ return TOK_MOD; }
+"\\/"	{ return TOK_PAT_OR; }
+"&"	{ return TOK_BITAND; }
+"|"	{ return TOK_BITOR; }
+"~"	{ return TOK_BITNOT; }
+"^"	{ return TOK_BITXOR; }
+">>"	{ return TOK_SHR; }
+"<<"	{ return TOK_SHL; }
+
+    /* Fill in the other operators */
+
+ /**************** Recognize reserved words ****************/
+
+ /* Basic types */
+
+"enum" 		{ return TOK_ENUM; }
+"any"		{ return TOK_ANY; }
+"bit"		{ return TOK_BIT; }
+"bool"		{ return TOK_BOOL; }
+"byte"		{ return TOK_BYTE; }
+"class"		{ return TOK_CLASS; }
+"double"	{ return TOK_DOUBLE; }
+"else"		{ return TOK_ELSE; }
+"event"		{ return TOK_EVENT; }
+"false"		{ return TOK_FALSE; }
+"if"		{ return TOK_IF; }
+"import"	{ return TOK_USE; }
+"int"		{ return TOK_INT; }
+"interface"	{ return TOK_INTERFACE; }
+"print"		{ return TOK_PRINT; }
+"return"	{ return TOK_RETURN; }
+"string"	{ return TOK_STRING; }
+"true"		{ return TOK_TRUE; }
+"void"		{ return TOK_VOID; }
+
+{UINTNUM}	{ 
+			yylval.uVal = strtol(yytext,NULL,10);
+			return TOK_UINTNUM;
+		}
+0(x|X){HEX}{1,4} {
+			yylval.uVal = strtol(yytext,NULL,16);
+			return TOK_UINTNUM;
+}
+
+"."((e|E)("+"|"-")?{UINTNUM})	{yyless(1);return TOK_DOT;}
+
+({DECIMAL_DIGIT}*)"."({DECIMAL_DIGIT}*)|({DECIMAL_DIGIT}*)({DECIMAL_DIGIT}+|"."{DECIMAL_DIGIT}*)((e|E)("+"|"-")?{UINTNUM})	{yylval.dVal = atof(yytext);return TOK_DOUBLENUM;}
+
+({LETTER}|{UNDERSCORE})({LETTER}|{UNDERSCORE}|{UINTNUM})*	{yylval.cVal = yytext;return TOK_ID;}
+ /**************** Unrecognized character ==> error ****************/
+
+. {
+	return TOK_SYNTAX_ERROR;
+}
+
+%%
+
+int convertToHexa(char ch){
+	if(ch>=97)
+		return ch - 97;
+	else if(ch>=65)
+		return ch - 65;
+	else if(ch>=48)
+		return ch - 48;
+}
