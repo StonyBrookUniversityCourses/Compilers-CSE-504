@@ -41,7 +41,25 @@ void ValueNode::print(ostream& os, int indent) const
 
 void RefExprNode::print(ostream& os, int indent) const
 {
-  os << ext(); 
+    os << ext(); 
+}
+
+
+void CompoundStmtNode::printWithoutBraces(ostream& os, int indent) const
+{
+  const std::list<StmtNode*> *stmtList = stmts();
+  for (std::list<StmtNode*>::const_iterator it=stmtList->begin(); it != stmtList->end(); ++it) {
+    prtSpace(os, indent);
+    (*it)->print(os, indent);
+    os << ";" << endl;
+  }
+}
+
+void CompoundStmtNode::print(ostream& os, int indent) const
+{
+  os << " {";
+  printWithoutBraces(os, indent);
+  os << "}";
 }
 
 RefExprNode::RefExprNode(string ext, const SymTabEntry* ste, 

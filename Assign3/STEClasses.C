@@ -58,9 +58,14 @@ void FunctionEntry::print(ostream& out, int indent) const
 
     }
     out << ")";
-    if(st != nullptr && st->size() > i) {
+    if(body() != NULL || (st != nullptr && st->size() > i)) {
 	cout << " {";
-	printST(out, indent, '\0', ';', true, i, st->size());
+	if(st != nullptr && st->size() > i)
+	    printST(out, indent, '\0', ';', true, i, st->size());
+	if(body() != NULL)
+	    body()->printWithoutBraces(out, indent);
+	
+	prtSpace(out, indent);  
 	cout << "}";
     }
 }
