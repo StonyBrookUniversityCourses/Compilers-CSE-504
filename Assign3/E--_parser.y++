@@ -74,6 +74,12 @@ void prt(string s){
 %type <strVector> var_list
 %type <classEntry> class_dec
 %type <functionEntry> func_decl_hdr
+%type <valVal> literal
+%type <uVal> TOK_UINTNUM 
+%type <dVal> TOK_DOUBLENUM 
+%type <refexpVal> ref_expr
+%type <exprVal> expr  assign_expr expr_star
+%type <cVal> TOK_STRCONST
 /* Uncomment types below as you start adding rules.
    They are commented right now to prevent compile errors.
 %type <functionEntry> function_header function_decl
@@ -83,18 +89,11 @@ void prt(string s){
 %type <patVal> event_pattern rule_body1
 %type <primPatVal> event primitive_pat 
 %type <exprList> expr_list expr_plus
-%type <exprVal> expr function_invocation asg_stmt
-%type <refexpVal> ref_expr
 %type <ruleNode> rule
 %type <strVector> id_list id_plus
 
-%type <cVal> TOK_IDENT TOK_PRINT 
 %type <funIval> ev_or_fun
-%type <uVal> TOK_UINTNUM 
-%type <dVal> TOK_DOUBLENUM 
-%type <cVal> TOK_STRCONST
 
-%type <valVal> literal
 
 %type <stmtList> stmt_plus
 %type <stmtVal> stmt simple_stmt
@@ -223,7 +222,7 @@ stmt_list		: statement_star
 ;
 
 
-statement 		: empty_stmt
+statement 		: empty_stmt 
 			| func_invoc_stmt
 			| com_stmt_star
 			| assign_expr TOK_SEMICOLON { prt("AssignStmt"); }
@@ -289,57 +288,53 @@ var_assign		: TOK_IDENT TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
 			| error TOK_ASSIGN expr_star { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
-ref_expr		: TOK_IDENT { prt("RefExpr"); }
+ref_expr		: TOK_IDENT { $$ = new RefExprNode($1, stm.currentScope()); }
 ;
 
-expr_star		: expr
-			| TOK_MINUS expr_star { prt("-Expr"); }
-			| TOK_NOT expr_star { prt("!Expr"); }
-			| TOK_BITNOT expr_star { prt("~Expr"); }
-			| expr_star TOK_BITXOR expr_star { prt("Expr ^ Expr"); }
-			| expr_star TOK_SHL expr_star { prt("Expr << Expr"); }
-			| expr_star TOK_LE expr_star { prt("Expr <= Expr"); }
-			| expr_star TOK_LT expr_star { prt("Expr < Expr"); }
-			| expr_star TOK_EQ expr_star { prt("Expr == Expr"); }
-			| expr_star TOK_GE expr_star { prt("Expr >= Expr"); }
-			| expr_star TOK_SHR expr_star { prt("Expr >> Expr"); }
-			| expr_star TOK_GT expr_star { prt("Expr > Expr"); }
-			| expr_star TOK_OR expr_star { prt("Expr || Expr"); }
-			| expr_star TOK_BITOR expr_star { prt("Expr | Expr"); }
-			| expr_star TOK_MINUS expr_star { prt("Expr - Expr"); }
-			| expr_star TOK_NE expr_star { prt("Expr != Expr"); }
-			| expr_star TOK_DIV expr_star { prt("Expr / Expr"); }
-			| expr_star TOK_MULT expr_star { prt("Expr * Expr"); }
-			| expr_star TOK_BITAND expr_star { prt("Expr & Expr"); }
-			| expr_star TOK_AND expr_star { prt("Expr && Expr"); }
-			| expr_star TOK_MOD expr_star { prt("Expr % Expr"); }
-			| expr_star TOK_PLUS expr_star { prt("Expr + Expr"); } 
-			| TOK_LPAREN expr_star TOK_RPAREN { prt("(Expr)"); }
+expr_star		: expr { $$ = $1; }
+			| TOK_MINUS expr_star { $$ = new OpNode(OpNode::OpCode::UMINUS,$2); }
+			| TOK_NOT expr_star { $$ = new OpNode(OpNode::OpCode::NOT,$2); }
+			| TOK_BITNOT expr_star { $$ = new OpNode(OpNode::OpCode::BITNOT,$2); }
+			| expr_star TOK_BITXOR expr_star { $$ = new OpNode(OpNode::OpCode::BITXOR,$1,$3); }
+			| expr_star TOK_SHL expr_star { $$ = new OpNode(OpNode::OpCode::SHL,$1,$3); }
+			| expr_star TOK_LE expr_star { $$ = new OpNode(OpNode::OpCode::LE,$1,$3); }
+			| expr_star TOK_LT expr_star { $$ = new OpNode(OpNode::OpCode::LT,$1,$3); }
+			| expr_star TOK_EQ expr_star { $$ = new OpNode(OpNode::OpCode::EQ,$1,$3); }
+			| expr_star TOK_GE expr_star { $$ = new OpNode(OpNode::OpCode::GE,$1,$3); }
+			| expr_star TOK_SHR expr_star { $$ = new OpNode(OpNode::OpCode::SHR,$1,$3); }
+			| expr_star TOK_GT expr_star { $$ = new OpNode(OpNode::OpCode::GT,$1,$3); }
+			| expr_star TOK_OR expr_star { $$ = new OpNode(OpNode::OpCode::OR,$1,$3); }
+			| expr_star TOK_BITOR expr_star { $$ = new OpNode(OpNode::OpCode::BITOR,$1,$3); }
+			| expr_star TOK_MINUS expr_star { $$ = new OpNode(OpNode::OpCode::MINUS,$1,$3); }
+			| expr_star TOK_NE expr_star { $$ = new OpNode(OpNode::OpCode::NE,$1,$3); }
+			| expr_star TOK_DIV expr_star { $$ = new OpNode(OpNode::OpCode::DIV,$1,$3); }
+			| expr_star TOK_MULT expr_star { $$ = new OpNode(OpNode::OpCode::MULT,$1,$3); }
+			| expr_star TOK_BITAND expr_star { $$ = new OpNode(OpNode::OpCode::BITAND,$1,$3); }
+			| expr_star TOK_AND expr_star { $$ = new OpNode(OpNode::OpCode::AND,$1,$3); }
+			| expr_star TOK_MOD expr_star { $$ = new OpNode(OpNode::OpCode::MOD,$1,$3); }
+			| expr_star TOK_PLUS expr_star { $$ = new OpNode(OpNode::OpCode::PLUS,$1,$3); }
+			| TOK_LPAREN expr_star TOK_RPAREN { $$ = $2; }
 ;
 
 
-expr			: lit_star
+expr			: literal { $$ = new ValueNode($1); }
 			| func_invoc
-			| ref_expr
-			| assign_expr
+			| ref_expr  { $$ = $1; }
+			| assign_expr { $$ = $1; }
 ;
 
-assign_expr		: ref_expr TOK_ASSIGN expr_star { prt("Assignment"); }
+assign_expr		: ref_expr TOK_ASSIGN expr_star { $$ = new OpNode(OpNode::OpCode::ASSIGN,$1,$3); }
 ;
 
 
-lit_star		:literal { prt("Literal"); }
+
+literal			: TOK_STRCONST	{ $$ = new Value($1); }
+			| TOK_TRUE	{ $$ = new Value(true); }
+			| TOK_FALSE	{ $$ = new Value(false); }
+			| TOK_UINTNUM	{ $$ = new Value($1, Type::TypeTag::UINT); }
+			| TOK_DOUBLENUM	{ $$ = new Value($1); }
 ;
 
-literal			: number 
-			| TOK_STRCONST
-			| TOK_TRUE
-			| TOK_FALSE
-;
-
-number			: TOK_UINTNUM 
-			| TOK_DOUBLENUM
-;
 
 formal_param_list 	: formal_param 
 			| formal_param_list TOK_COMMA formal_param

@@ -4,11 +4,11 @@
 
 AstNode::AstNode(NodeType nt, int line, int column, string file):
   ProgramElem(NULL, line, column, file) {
-	// Add your code here
+	nodeType_ = nt;
 }
 
 AstNode::AstNode(const AstNode& ast): ProgramElem(ast) {
-	// Add your code here
+	nodeType_ = ast.nodeType();
 }
 
 /****************************************************************/
@@ -17,13 +17,39 @@ ExprNode::ExprNode(ExprNodeType et, const Value* val, int line, int column,
 				   string file):
 	AstNode(AstNode::NodeType::EXPR_NODE, line, column, file)
 {
-	// Add your code here
+   val_ = val;
+   coercedType_ = nullptr;
 }
 
 
 ExprNode::ExprNode(const ExprNode& e) : AstNode(e)
 {
-	// Add your code here
+	val_ = e.value();
+	coercedType_ = e.coercedType();
+}
+
+RefExprNode::RefExprNode(const RefExprNode& re) : ExprNode(re)
+{
+	ext_ = re.ext();
+	sym_ = re.symTabEntry();
+}
+
+void ValueNode::print(ostream& os, int indent) const
+{
+   value()->print(os, indent); 
+}
+
+void RefExprNode::print(ostream& os, int indent) const
+{
+  os << ext(); 
+}
+
+RefExprNode::RefExprNode(string ext, const SymTabEntry* ste, 
+	      int line, int column, string file):
+	      ExprNode(ExprNode::ExprNodeType::REF_EXPR_NODE, NULL, line, column, file)
+{
+    ext_ = ext;
+    sym_ = ste;
 }
 /****************************************************************/
 extern const OpNode::OpInfo opInfo[] = {
