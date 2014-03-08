@@ -4,10 +4,63 @@
 
 void GlobalEntry::print(ostream& out, int indent) const
 {
-	// Add your code
+    printST(out, indent, '\0', ';', true);
 }
+
 
 void EventEntry::print(ostream& out, int indent) const
 {
-	// Add your code
+    out <<  type()->fullName() << " " << name() << "(";
+    printST(out, indent, '\0', '\0', false);
+    out << ")";
+
+}
+
+void VariableEntry::print(ostream& out, int indent) const
+{
+    out << type()->fullName() << " " << name();
+}
+
+void ClassEntry::print(ostream& out, int indent) const
+{
+    out << "class" << " " << name();
+}
+
+void BlockEntry::print(ostream& out, int indent) const
+{
+    out << " {";
+    printST(out, indent, '\0', ';', true);
+    out << "}";
+
+}
+
+void FunctionEntry::print(ostream& out, int indent) const
+{
+    out <<  type()->fullName() << " " << name() << "(";
+    const SymTab *st = NULL;
+    int i = 0;
+    if ((st = symTab()) != nullptr) {
+        SymTab::const_iterator it = st->begin();
+        for (i=0; it != (st->end()); i++, ++it)  {
+            SymTabEntry *ste = (SymTabEntry *)(*it);
+            if ((ste->kind() == SymTabEntry::Kind::VARIABLE_KIND)) {
+                VariableEntry *ve = (VariableEntry *) ste;
+                if(ve->varKind() != VariableEntry::VarKind::PARAM_VAR) {
+		   break;
+                }
+            } else {
+                break;
+            }
+        }
+	if(i != 0) {
+	    printST(out, indent, '\0', '\0', false, 0, i);
+	}
+
+    }
+    out << ")";
+    if(st != nullptr && st->size() > i) {
+	cout << " {";
+	printST(out, indent, '\0', ';', true, i, st->size());
+	cout << "}";
+    }
 }

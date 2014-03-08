@@ -11,6 +11,8 @@ extern int yylex();
 extern void yyerror(const char *s);
 int offSet;
 extern const OpNode::OpInfo opInfo[];
+void prt(string s){
+}
 
 %}
 
@@ -64,6 +66,14 @@ extern const OpNode::OpInfo opInfo[];
 %token TOK_TRUE TOK_FALSE TOK_IDENT
 
 /******************************** Type Info ********************************/
+
+%type <eventEntry> event_decl_hdr
+%type <cVal> TOK_IDENT TOK_PRINT
+%type <variableEntry> formal_param
+%type <typeVal> type base_type type_star 
+%type <strVector> var_list
+%type <classEntry> class_dec
+%type <functionEntry> func_decl_hdr
 /* Uncomment types below as you start adding rules.
    They are commented right now to prevent compile errors.
 %type <functionEntry> function_header function_decl
@@ -72,7 +82,6 @@ extern const OpNode::OpInfo opInfo[];
 %type <eventEntry> event_decl_hdr event_decl
 %type <patVal> event_pattern rule_body1
 %type <primPatVal> event primitive_pat 
-%type <typeVal> type baseType 
 %type <exprList> expr_list expr_plus
 %type <exprVal> expr function_invocation asg_stmt
 %type <refexpVal> ref_expr
@@ -128,6 +137,286 @@ extern const OpNode::OpInfo opInfo[];
 %%
 
 
-specification: /* empty */;
+specification		: ifc_decl_star /*rule_star*/ { prt("Spec"); }
+;
 
+ifc_decl_star		: /* empty */ {}
+			| ifc_decl_star ifc_decl {}
+			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");}
+;
+
+ifc_decl		: var_dec 
+			| event_dec_star 
+			| class_dec 
+			| func_decl_star
+			| TOK_SEMICOLON /* Fill in the other rules */
+;
+
+rule_star		: rule
+			| rule_star rule
+;
+
+rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); }
+;
+
+event_dec_star		: event_decl_hdr event_decl_params {}
+;
+
+event_decl_hdr 		: TOK_EVENT TOK_IDENT {
+						    $$ = new EventEntry($2);
+						    stm.insert($$);
+				 		    stm.enterScope($$);
+					      }
+		
+event_decl_params	: TOK_LPAREN formal_param_list_star TOK_RPAREN TOK_SEMICOLON {
+											 stm.leaveScope();
+										     }
+
+
+;
+    
+class_dec		: TOK_CLASS TOK_IDENT TOK_SEMICOLON { 
+								$$ = new ClassEntry($2); 
+								stm.insert($$);
+							     }
+;
+
+func_decl_star		: func_decl TOK_SEMICOLON { stm.leaveScope(); } | func_decl func_body{ stm.leaveScope(); }
+;
+
+func_decl 		: func_decl_hdr func_decl_params
+;
+
+func_decl_hdr		: type_star TOK_IDENT { 
+						$$ = new FunctionEntry($2, $1);
+						stm.insert($$);
+						stm.enterScope($$);
+					      }
+;
+func_decl_params	: TOK_LPAREN formal_param_list_star TOK_RPAREN
+;
+
+func_body		: TOK_LBRACE func_body_inner TOK_RBRACE { }
+;
+
+func_body_inner		: stmt_list
+			| var_dec_list stmt_list 
+;
+
+formal_param_list_star 	: /*empty*/
+			| formal_param_list {}
+;
+
+statement_star		: statement
+;
+
+com_stmt_star		: com_stmt { prt("CompoundStmt"); }	%prec "reduce"
+;
+
+
+com_stmt		: TOK_LBRACE stmt_list TOK_RBRACE
+			| com_stmt TOK_SEMICOLON{}	
+;
+
+stmt_list		: statement_star 
+			| stmt_list statement_star
+;
+
+
+statement 		: empty_stmt
+			| func_invoc_stmt
+			| com_stmt_star
+			| assign_expr TOK_SEMICOLON { prt("AssignStmt"); }
+			| ret_stmt TOK_SEMICOLON { prt("ReturnStmt"); }
+			| if_then_stmt { prt("IfThenStmt"); }			%prec "then"
+			| if_then_else_stmt { prt("IfThenElseStmt"); }
+			| error TOK_SEMICOLON { errMsg("Syntax error while parsing a statement"); }
+;
+
+if_then_else_stmt	: if_then_stmt TOK_ELSE statement_star
+;
+
+if_then_stmt		: TOK_IF expr_star statement_star
+;
+
+ret_stmt		: TOK_RETURN expr_star
+
+empty_stmt		: /*empty statement*/ TOK_SEMICOLON
+;
+
+func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); }
+;
+
+func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); }
+;
+
+expr_list_star		: expr_list {}
+			| /*empty*/ {}
+;
+
+expr_list		: expr_star
+			| expr_list TOK_COMMA expr_star
+;
+
+
+var_dec_list		: var_dec
+			| var_dec_list var_dec
+;
+var_dec			: type_star var_list TOK_SEMICOLON {
+								SymTabEntry *currentScope = stm.currentScope();
+								VariableEntry::VarKind v = VariableEntry::VarKind::LOCAL_VAR;
+
+								if(currentScope->kind() == SymTabEntry::Kind::GLOBAL_KIND) {
+									v = VariableEntry::VarKind::GLOBAL_VAR;
+								}
+								for(unsigned int x=0; x<$2->size(); x++) {
+									VariableEntry *varEntry = new VariableEntry($2->at(x),v,$1);
+									stm.insert(varEntry);
+								}
+								
+							    }	
+;
+
+var_list		: TOK_IDENT { 
+					$$ = new vector<string>();
+					$$->push_back($1);
+				    }
+		//	| var_assign
+			| var_list TOK_COMMA TOK_IDENT { $$->push_back($3); }
+;
+
+var_assign		: TOK_IDENT TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
+			| error TOK_ASSIGN expr_star { yyerror("Error in variable declaration, may be a missing identifier"); }
+;
+
+ref_expr		: TOK_IDENT { prt("RefExpr"); }
+;
+
+expr_star		: expr
+			| TOK_MINUS expr_star { prt("-Expr"); }
+			| TOK_NOT expr_star { prt("!Expr"); }
+			| TOK_BITNOT expr_star { prt("~Expr"); }
+			| expr_star TOK_BITXOR expr_star { prt("Expr ^ Expr"); }
+			| expr_star TOK_SHL expr_star { prt("Expr << Expr"); }
+			| expr_star TOK_LE expr_star { prt("Expr <= Expr"); }
+			| expr_star TOK_LT expr_star { prt("Expr < Expr"); }
+			| expr_star TOK_EQ expr_star { prt("Expr == Expr"); }
+			| expr_star TOK_GE expr_star { prt("Expr >= Expr"); }
+			| expr_star TOK_SHR expr_star { prt("Expr >> Expr"); }
+			| expr_star TOK_GT expr_star { prt("Expr > Expr"); }
+			| expr_star TOK_OR expr_star { prt("Expr || Expr"); }
+			| expr_star TOK_BITOR expr_star { prt("Expr | Expr"); }
+			| expr_star TOK_MINUS expr_star { prt("Expr - Expr"); }
+			| expr_star TOK_NE expr_star { prt("Expr != Expr"); }
+			| expr_star TOK_DIV expr_star { prt("Expr / Expr"); }
+			| expr_star TOK_MULT expr_star { prt("Expr * Expr"); }
+			| expr_star TOK_BITAND expr_star { prt("Expr & Expr"); }
+			| expr_star TOK_AND expr_star { prt("Expr && Expr"); }
+			| expr_star TOK_MOD expr_star { prt("Expr % Expr"); }
+			| expr_star TOK_PLUS expr_star { prt("Expr + Expr"); } 
+			| TOK_LPAREN expr_star TOK_RPAREN { prt("(Expr)"); }
+;
+
+
+expr			: lit_star
+			| func_invoc
+			| ref_expr
+			| assign_expr
+;
+
+assign_expr		: ref_expr TOK_ASSIGN expr_star { prt("Assignment"); }
+;
+
+
+lit_star		:literal { prt("Literal"); }
+;
+
+literal			: number 
+			| TOK_STRCONST
+			| TOK_TRUE
+			| TOK_FALSE
+;
+
+number			: TOK_UINTNUM 
+			| TOK_DOUBLENUM
+;
+
+formal_param_list 	: formal_param 
+			| formal_param_list TOK_COMMA formal_param
+;
+
+formal_param		: type_star TOK_IDENT { 
+							$$ = new VariableEntry($2,VariableEntry::VarKind::PARAM_VAR,$1);
+							stm.insert($$);
+					}
+;
+
+evn_pat_star		: evn_pat {}
+;
+
+
+evn_pat 		: primitive_pat_star
+			| TOK_NOT evn_pat 	{ prt("!EventPat"); }
+			| evn_pat TOK_PAT_STAR { prt("EventPat **"); }
+			| evn_pat TOK_PAT_OR evn_pat { prt("EventPat \\/ EventPat"); }
+			| evn_pat TOK_COLON evn_pat { prt("EventPat : EventPat"); }
+			| TOK_LPAREN evn_pat TOK_RPAREN { prt("(EventPat)"); }
+;
+
+primitive_pat_star	: primitive_pat { prt("PrimitivePat"); }
+			| primitive_pat TOK_BITOR expr_star { prt("PrimitivePatWithCond"); }
+;
+
+primitive_pat 		: normal_event
+			| any_event_star
+;
+
+normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); }
+;
+
+any_event_star		: any_event { prt("anyEvent"); }
+
+any_event		: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
+;
+
+evn_param_list_star 	: evn_param_list
+			| /*empty*/
+;
+
+evn_param_list		: event_param
+			| evn_param_list TOK_COMMA event_param
+;
+
+event_param		: TOK_IDENT{ prt("EventFormalParam"); }
+;
+
+
+class_name		: TOK_IDENT;
+
+event_name 		: TOK_IDENT;
+
+type_star 		: type {$$ = $1;}
+;
+
+
+
+type			: base_type { $$ = $1;}
+			| TOK_UNSIGNED base_type { $$ = new Type(Type::TypeTag::UINT);  }
+			| TOK_IDENT { 
+					SymTabEntry *entry = stm.lookUp($1);
+					if(entry == 0) {
+						$$ = new Type(Type::TypeTag::UNKNOWN); 
+					} else {
+						$$ = new Type(entry, Type::TypeTag::CLASS);
+					}
+				     }
+
+base_type		: TOK_VOID { $$ = new Type(Type::TypeTag::VOID); }
+			| TOK_STRING { $$ = new Type(Type::TypeTag::STRING); }
+			| TOK_INT { $$ = new Type(Type::TypeTag::INT); }
+			| TOK_BOOL { $$ = new Type(Type::TypeTag::BOOL); }
+			| TOK_BYTE { $$ = new Type(Type::TypeTag::BYTE); }
+			| TOK_DOUBLE { $$ = new Type(Type::TypeTag::DOUBLE); }
+		/*	| TOK_SHORT { $$ = Type::; }*/
+;
 %%
