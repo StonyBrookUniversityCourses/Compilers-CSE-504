@@ -39,6 +39,7 @@ void prt(string s){
   PrimitivePatNode*  primPatVal;
   StmtNode*          stmtVal;
   list<StmtNode*>*   stmtList;
+  vector<VariableEntry*>* varEntryList;
   IfNode*            ifVal;
   CompoundStmtNode*  compoundStmtVal;
   RuleNode*          ruleNode;
@@ -69,37 +70,32 @@ void prt(string s){
 
 %type <eventEntry> event_decl_hdr
 %type <cVal> TOK_IDENT TOK_PRINT
-%type <variableEntry> formal_param
+%type <variableEntry> formal_param var_assign
 %type <typeVal> type base_type type_star 
-%type <strVector> var_list
+%type <varEntryList> var_list
 %type <classEntry> class_dec
 %type <functionEntry> func_decl_hdr
 %type <valVal> literal
 %type <uVal> TOK_UINTNUM 
 %type <dVal> TOK_DOUBLENUM 
 %type <refexpVal> ref_expr
-%type <exprVal> expr  assign_expr expr_star
+%type <exprVal> expr  assign_expr expr_star func_invoc
 %type <cVal> TOK_STRCONST
-%type <stmtVal> ret_stmt statement statement_star
+%type <stmtVal> ret_stmt statement statement_star func_invoc_stmt
 %type <compoundStmtVal> com_stmt_star com_stmt
 %type <stmtList> stmt_list
+%type <exprList> expr_list expr_list_plus
+%type <primPatVal> normal_event primitive_pat primitive_pat_star
+%type <patVal> evn_pat_star evn_pat rule_hdr
+%type <ruleNode> rule
+%type <strVector> evn_param_list evn_param_list_star
 /* Uncomment types below as you start adding rules.
    They are commented right now to prevent compile errors.
-%type <functionEntry> function_header function_decl
-%type <variableEntry> variable_decl formal_param variable_decl1
 %type <typeList> formal_param_list formal_param_plus 
-%type <eventEntry> event_decl_hdr event_decl
-%type <patVal> event_pattern rule_body1
-%type <primPatVal> event primitive_pat 
-%type <exprList> expr_list expr_plus
-%type <ruleNode> rule
-%type <strVector> id_list id_plus
 
 %type <funIval> ev_or_fun
 
 
-%type <stmtList> stmt_plus
-%type <stmtVal> stmt simple_stmt
 %type <ifVal>  if_then_else_stmt 
 */
 
@@ -138,7 +134,7 @@ void prt(string s){
 %%
 
 
-specification		: ifc_decl_star /*rule_star*/ { prt("Spec"); }
+specification		: ifc_decl_star rule_star { prt("Spec"); }
 ;
 
 ifc_decl_star		: /* empty */ {}
@@ -157,8 +153,20 @@ rule_star		: rule
 			| rule_star rule
 ;
 
-rule 			: evn_pat_star TOK_ARROW statement_star { prt("Rule"); }
+rule 			: rule_hdr statement_star  {
+							$$ = new RuleNode((RuleBlockEntry *)(stm.currentScope()),$1,$2);
+							stm.leaveScope();
+							GlobalEntry *ge = (GlobalEntry *)(stm.currentScope());
+							ge->addRule($$);
+						    }
+								    
 ;
+
+rule_hdr		: evn_pat_star TOK_ARROW {
+						    RuleBlockEntry *rbe = new RuleBlockEntry();
+						    stm.enterScope(rbe);
+						    $$ = $1;
+						}
 
 event_dec_star		: event_decl_hdr event_decl_params {}
 ;
@@ -231,8 +239,8 @@ stmt_list		: statement_star {
 
 
 statement 		: empty_stmt 
-			| func_invoc_stmt
-			| com_stmt_star
+			| func_invoc_stmt { $$ = $1; }
+			| com_stmt_star { $$ = $1; }
 			| assign_expr TOK_SEMICOLON { $$ = new ExprStmtNode($1); }
 			| ret_stmt TOK_SEMICOLON { $$ = $1; }
 			| if_then_stmt { prt("IfThenStmt"); }			%prec "then"
@@ -251,18 +259,25 @@ ret_stmt		: TOK_RETURN expr_star { $$ = new ReturnStmtNode($2, (FunctionEntry *)
 empty_stmt		: /*empty statement*/ TOK_SEMICOLON
 ;
 
-func_invoc_stmt		: func_invoc TOK_SEMICOLON { prt("FunctionInvocationStmt"); }
+func_invoc_stmt		: func_invoc TOK_SEMICOLON { $$ = new ExprStmtNode($1); }
 ;
 
-func_invoc		: TOK_IDENT TOK_LPAREN expr_list_star TOK_RPAREN { prt("FunctionInvocation"); }
+func_invoc		: TOK_IDENT TOK_LPAREN expr_list_plus TOK_RPAREN { 
+									    SymTabEntry *ste = stm.lookUp($1);
+									    if(ste == nullptr || ste->kind() != SymTabEntry::Kind::FUNCTION_KIND) {
+										$$ = NULL;
+									    } else {
+										$$ = new InvocationNode(ste, $3);
+									    }
+									 }
 ;
 
-expr_list_star		: expr_list {}
-			| /*empty*/ {}
+expr_list_plus		: expr_list {$$ = $1;}
+			| /*empty*/ {$$ = nullptr;}
 ;
 
-expr_list		: expr_star
-			| expr_list TOK_COMMA expr_star
+expr_list		: expr_star { $$ = new vector<ExprNode*>(); $$->push_back($1);} 
+			| expr_list TOK_COMMA expr_star {$$->push_back($3);}
 ;
 
 
@@ -276,8 +291,10 @@ var_dec			: type_star var_list TOK_SEMICOLON {
 								if(currentScope->kind() == SymTabEntry::Kind::GLOBAL_KIND) {
 									v = VariableEntry::VarKind::GLOBAL_VAR;
 								}
-								for(unsigned int x=0; x<$2->size(); x++) {
-									VariableEntry *varEntry = new VariableEntry($2->at(x),v,$1);
+								for (vector<VariableEntry*>::const_iterator it=$2->begin(); it != $2->end(); ++it) {
+									VariableEntry *varEntry = *it;
+									varEntry->varKind(v);
+									varEntry->type($1);
 									stm.insert(varEntry);
 								}
 								
@@ -285,14 +302,18 @@ var_dec			: type_star var_list TOK_SEMICOLON {
 ;
 
 var_list		: TOK_IDENT { 
-					$$ = new vector<string>();
+					$$ = new vector<VariableEntry*>();
+					$$->push_back(new VariableEntry($1,VariableEntry::VarKind::LOCAL_VAR));
+				    }
+			| var_assign {
+					$$ = new vector<VariableEntry*>();
 					$$->push_back($1);
 				    }
-		//	| var_assign
-			| var_list TOK_COMMA TOK_IDENT { $$->push_back($3); }
+			| var_list TOK_COMMA TOK_IDENT { $$->push_back(new VariableEntry($3,VariableEntry::VarKind::LOCAL_VAR)); }
+			| var_list TOK_COMMA var_assign { $$->push_back($3); }
 ;
 
-var_assign		: TOK_IDENT TOK_ASSIGN expr_star { prt("VariableDeclWithInit"); }
+var_assign		: TOK_IDENT TOK_ASSIGN expr_star { $$ = new VariableEntry($1,VariableEntry::VarKind::LOCAL_VAR, nullptr, $3); }
 			| error TOK_ASSIGN expr_star { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
@@ -354,11 +375,11 @@ formal_param		: type_star TOK_IDENT {
 					      }
 ;
 
-evn_pat_star		: evn_pat {}
+evn_pat_star		: evn_pat {$$ = $1;}
 ;
 
 
-evn_pat 		: primitive_pat_star
+evn_pat 		: primitive_pat_star { $$ = new PatNode(BasePatNode::PatNodeKind::PRIMITIVE, $1); }
 			| TOK_NOT evn_pat 	{ prt("!EventPat"); }
 			| evn_pat TOK_PAT_STAR { prt("EventPat **"); }
 			| evn_pat TOK_PAT_OR evn_pat { prt("EventPat \\/ EventPat"); }
@@ -366,15 +387,37 @@ evn_pat 		: primitive_pat_star
 			| TOK_LPAREN evn_pat TOK_RPAREN { prt("(EventPat)"); }
 ;
 
-primitive_pat_star	: primitive_pat { prt("PrimitivePat"); }
-			| primitive_pat TOK_BITOR expr_star { prt("PrimitivePatWithCond"); }
+primitive_pat_star	: primitive_pat { $$ = $1; }
+			| primitive_pat TOK_BITOR expr_star { 
+								$$ = $1;
+								$$->cond($3);
+							    }
 ;
 
-primitive_pat 		: normal_event
+primitive_pat 		: normal_event { $$ = $1; }
 			| any_event_star
 ;
 
-normal_event		: event_name TOK_LPAREN evn_param_list_star TOK_RPAREN { prt("NormalEvent"); }
+normal_event		: TOK_IDENT TOK_LPAREN evn_param_list_star TOK_RPAREN { 
+										    SymTabEntry *ste = stm.lookUp($1); 
+										    EventEntry *ee = nullptr;
+										    if (ste != nullptr && ste->kind() == SymTabEntry::Kind::EVENT_KIND) {
+											ee = (EventEntry *) ste;
+											const SymTab *st = ee->symTab();
+											vector<VariableEntry*> *varList = new vector<VariableEntry*>();
+
+											if($3 != NULL) {
+											    vector<string>::const_iterator si = $3->begin();
+											    SymTab::const_iterator sti = st->begin();
+											    for(;sti != st->end() && si != $3->end(); ++sti, ++si) {
+												    VariableEntry *ve = (VariableEntry *) (*sti);
+												    varList->push_back(new VariableEntry(*si, ve->varKind(), ve->type()));
+											    }
+											}
+
+											$$ = new PrimitivePatNode(ee, varList);
+										    }
+										}
 ;
 
 any_event_star		: any_event { prt("anyEvent"); }
@@ -382,21 +425,18 @@ any_event_star		: any_event { prt("anyEvent"); }
 any_event		: TOK_ANY | TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN
 ;
 
-evn_param_list_star 	: evn_param_list
-			| /*empty*/
+evn_param_list_star 	: evn_param_list { $$ = $1; }
+			| /*empty*/ { $$ = NULL; }
 ;
 
-evn_param_list		: event_param
-			| evn_param_list TOK_COMMA event_param
+evn_param_list		: TOK_IDENT { 
+					$$ = new vector<string>();
+					$$->push_back($1);
+				      }      	
+			| evn_param_list TOK_COMMA TOK_IDENT { $$->push_back($3); }
 ;
 
-event_param		: TOK_IDENT{ prt("EventFormalParam"); }
-;
 
-
-class_name		: TOK_IDENT;
-
-event_name 		: TOK_IDENT;
 
 type_star 		: type {$$ = $1;}
 ;

@@ -19,6 +19,10 @@ void EventEntry::print(ostream& out, int indent) const
 void VariableEntry::print(ostream& out, int indent) const
 {
     out << type()->fullName() << " " << name();
+    if (initVal()) {
+	out << "=";
+	initVal()->print(out);
+    }	
 }
 
 void ClassEntry::print(ostream& out, int indent) const
@@ -62,10 +66,10 @@ void FunctionEntry::print(ostream& out, int indent) const
 	cout << " {";
 	if(st != nullptr && st->size() > i)
 	    printST(out, indent, '\0', ';', true, i, st->size());
+	else 
+	    prtln(out, indent);
 	if(body() != NULL)
 	    body()->printWithoutBraces(out, indent);
-	
-	prtSpace(out, indent);  
 	cout << "}";
     }
 }

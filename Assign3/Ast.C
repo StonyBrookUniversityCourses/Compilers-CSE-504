@@ -34,6 +34,35 @@ RefExprNode::RefExprNode(const RefExprNode& re) : ExprNode(re)
 	sym_ = re.symTabEntry();
 }
 
+RuleNode::RuleNode(BlockEntry *re, BasePatNode* pat, StmtNode* reaction, int line, 
+				int column, string file):
+		AstNode(AstNode::NodeType::RULE_NODE,line,column,file)
+{
+    rste_ = re;
+    pat_ = pat;
+    reaction_ = reaction;
+}
+
+
+PrimitivePatNode::PrimitivePatNode(EventEntry* ee, vector<VariableEntry*>* params, 
+				   ExprNode* c,
+				   int line, int column, string file):
+		BasePatNode(BasePatNode::PatNodeKind::PRIMITIVE, line, column, file)
+{
+
+    ee_ = ee;
+    params_ = params;
+    cond_ = c;
+
+}
+
+PatNode::PatNode(PatNodeKind pk, BasePatNode *p1, BasePatNode*p2, int line, int column, string file):
+    BasePatNode(pk, line, column, file)
+{
+    pat1_ = p1;
+    pat2_ = p2;
+}
+
 void ValueNode::print(ostream& os, int indent) const
 {
    value()->print(os, indent); 
@@ -44,20 +73,101 @@ void RefExprNode::print(ostream& os, int indent) const
     os << ext(); 
 }
 
+InvocationNode::InvocationNode(const SymTabEntry *ste, vector<ExprNode*>* param,
+			int line, int column, string file):
+			 ExprNode(ExprNode::ExprNodeType::INV_NODE, NULL, line, column, file) 
+{
+    params_ = param;
+    ste_ = ste;
+}
+
+InvocationNode::InvocationNode(const InvocationNode &ie):ExprNode(ie)
+{
+    params_ = params();
+    ste_ = symTabEntry();
+}
+
+void InvocationNode::print(ostream& os, int indent) const
+{
+    const SymTabEntry *ste = symTabEntry();
+    if(ste == nullptr) {
+	os << "Function not defined";
+    }
+    else {
+	FunctionEntry *fe = (FunctionEntry *) ste;
+	os << fe -> name() << "(";
+	if(params() != nullptr) {
+	    for (std::vector<ExprNode*>::const_iterator it = params()->begin(); it != params()->end(); ++it) {
+			(*it)->print(os, indent);
+	    }
+	} 
+	os << ")";
+    }
+
+}
+
+void RuleNode::print(ostream& os, int indent) const
+{
+    
+}
+
+void PrimitivePatNode::print(ostream& os, int indent) const
+{
+    
+}
+
+void PatNode::print(ostream& os, int indent) const
+{
+    
+}
+
+
+bool PrimitivePatNode::hasNeg() const
+{
+    return true;    
+}
+
+bool PrimitivePatNode::hasSeqOps() const
+{
+    return false;
+}
+
+bool PrimitivePatNode::hasAnyOrOther() const 
+{
+    return false;
+}
+
+bool PatNode::hasNeg() const
+{
+    return true;    
+}
+
+bool PatNode::hasSeqOps() const
+{
+    return false;
+}
+
+bool PatNode::hasAnyOrOther() const 
+{
+    return false;
+}
 
 void CompoundStmtNode::printWithoutBraces(ostream& os, int indent) const
 {
   const std::list<StmtNode*> *stmtList = stmts();
-  for (std::list<StmtNode*>::const_iterator it=stmtList->begin(); it != stmtList->end(); ++it) {
+  for (std::list<StmtNode*>::const_iterator it=stmtList->begin(); 
+				    it != stmtList->end(); ++it) {
     prtSpace(os, indent);
     (*it)->print(os, indent);
-    os << ";" << endl;
+    os << ";";
+    prtln(os,indent);
   }
 }
 
 void CompoundStmtNode::print(ostream& os, int indent) const
 {
   os << " {";
+  prtln(os,indent);
   printWithoutBraces(os, indent);
   os << "}";
 }
