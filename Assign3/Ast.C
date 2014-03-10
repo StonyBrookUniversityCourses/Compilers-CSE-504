@@ -13,10 +13,9 @@ AstNode::AstNode(const AstNode& ast): ProgramElem(ast) {
 
 /****************************************************************/
 
-void putSemicolonForStmt(ostream& os, StmtNode *st) 
+bool stmtNoSemicolonAtEnd(const StmtNode *st) 
 {
-    if ((st)->stmtNodeKind() != StmtNode::StmtNodeKind::COMPOUND)
-	os << ";";
+    return (!st || (st)->stmtNodeKind() == StmtNode::StmtNodeKind::EXPR || (st)->stmtNodeKind() == StmtNode::StmtNodeKind::RETURN);
 }
 
 ExprNode::ExprNode(ExprNodeType et, const Value* val, int line, int column,
@@ -89,12 +88,13 @@ void IfNode::print(ostream& os, int indent) const
     os << ") ";
     if (thenStmt())
 	thenStmt()->print(os, indent);
-    else 
-	os << ";";
+    if (!thenStmt() || thenStmt()->stmtNodeKind() != StmtNode::StmtNodeKind::COMPOUND) 
+	endln(os, indent);
     if (elseStmt()) {
-	prtln(os, indent);
 	os << "else ";
 	elseStmt()->print(os, indent);
+	 if (!elseStmt() || elseStmt()->stmtNodeKind() != StmtNode::StmtNodeKind::COMPOUND)
+	    endln(os, indent);
     }
 }
 
@@ -226,8 +226,8 @@ void CompoundStmtNode::printWithoutBraces(ostream& os, int indent) const
 	    it != stmtList->end(); ++it) {
 	prtSpace(os, indent);
 	(*it)->print(os, indent);
-	putSemicolonForStmt(os, *it);
-	prtln(os, indent);
+	if (stmtNoSemicolonAtEnd(*it))
+	    endln(os, indent);
     }
 }
 
