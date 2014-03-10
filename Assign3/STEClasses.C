@@ -5,14 +5,19 @@
 void GlobalEntry::print(ostream& out, int indent) const
 {
     printST(out, indent, '\0', ';', true);
+    prtln(out, indent);
+    for(vector<RuleNode*>::const_iterator it = rules_.begin(); it != rules_.end(); ++it) {
+	(*it)->print(out, indent+STEP_INDENT);
+	endln(out, indent);
+    }
+    prtSpace(out, indent+STEP_INDENT);
 }
 
 
 void EventEntry::print(ostream& out, int indent) const
 {
-    out <<  type()->fullName() << " " << name() << "(";
-    printST(out, indent, '\0', '\0', false);
-    out << ")";
+    out << "event"  << " " << name() ;
+    printST(out, indent, '(', ')', false);
 
 }
 
@@ -20,7 +25,7 @@ void VariableEntry::print(ostream& out, int indent) const
 {
     out << type()->fullName() << " " << name();
     if (initVal()) {
-	out << "=";
+	out << " = ";
 	initVal()->print(out);
     }	
 }

@@ -136,6 +136,7 @@ typedef union YYSTYPE
   PrimitivePatNode*  primPatVal;
   StmtNode*          stmtVal;
   list<StmtNode*>*   stmtList;
+  vector<VariableEntry*>* varEntryList;
   IfNode*            ifVal;
   CompoundStmtNode*  compoundStmtVal;
   RuleNode*          ruleNode;
@@ -147,7 +148,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 151 "E--_parser.H"
+#line 152 "E--_parser.H"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
