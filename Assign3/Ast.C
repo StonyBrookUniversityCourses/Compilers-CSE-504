@@ -91,6 +91,7 @@ void IfNode::print(ostream& os, int indent) const
     if (!thenStmt() || thenStmt()->stmtNodeKind() != StmtNode::StmtNodeKind::COMPOUND) 
 	endln(os, indent);
     if (elseStmt()) {
+	prtSpace(os, indent);
 	os << "else ";
 	elseStmt()->print(os, indent);
 	 if (!elseStmt() || elseStmt()->stmtNodeKind() != StmtNode::StmtNodeKind::COMPOUND)
@@ -142,6 +143,7 @@ void InvocationNode::print(ostream& os, int indent) const
 
 void RuleNode::print(ostream& os, int indent) const
 {
+    prtSpace(os, indent);
     pat_->print(os,indent);
     os << "-->  ";
     reaction_->print(os, indent);
@@ -237,7 +239,7 @@ void CompoundStmtNode::print(ostream& os, int indent) const
     if (stmts()->size() != 0) {
 	prtln(os, indent);
 	printWithoutBraces(os, indent);
-    }	
+    }
     os << "}";
     endln(os, indent);
 }

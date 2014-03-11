@@ -101,6 +101,7 @@ void prt(string s){
 
 /*********************   Precedence and Associativity    ********************/
 
+%right		TOK_SEMICOLON "reduce"
 %nonassoc TOK_ASSIGN
 
 %left  TOK_PAT_OR 
@@ -125,6 +126,7 @@ void prt(string s){
 %left  TOK_MULT TOK_DIV TOK_MOD
 %right TOK_UMINUS 
 
+%right	TOK_ELSE "then"
 %left  TOK_LBRACK
 %left  TOK_DOT
 
@@ -134,12 +136,13 @@ void prt(string s){
 %%
 
 
-specification		: ifc_decl_star rule_star { prt("Spec"); }
+specification		: ifc_decl_star rule_star { }
+			| /*empty string*/ {/*error*/ }
 ;
 
 ifc_decl_star		: /* empty */ {}
 			| ifc_decl_star ifc_decl {}
-			| ifc_decl_star error TOK_SEMICOLON { errMsg("Syntax error, expecting a declaration");}
+			| ifc_decl_star error TOK_SEMICOLON {}
 ;
 
 ifc_decl		: var_dec 
@@ -247,7 +250,7 @@ statement 		: empty_stmt {$$ = NULL;}
 			| ret_stmt TOK_SEMICOLON { $$ = $1; }
 			| if_then_stmt { $$ = $1; }			%prec "then"
 			| if_then_else_stmt { $$ = $1; }
-			| error TOK_SEMICOLON { errMsg("Syntax error while parsing a statement"); }
+			| error TOK_SEMICOLON {  }
 ;
 
 if_then_else_stmt	: if_then_stmt TOK_ELSE statement_star { 
@@ -319,7 +322,6 @@ var_list		: TOK_IDENT {
 ;
 
 var_assign		: TOK_IDENT TOK_ASSIGN expr_star { $$ = new VariableEntry($1,VariableEntry::VarKind::LOCAL_VAR, nullptr, $3); }
-			| error TOK_ASSIGN expr_star { yyerror("Error in variable declaration, may be a missing identifier"); }
 ;
 
 ref_expr		: TOK_IDENT { $$ = new RefExprNode($1, stm.currentScope()); }
@@ -426,7 +428,7 @@ normal_event		: TOK_IDENT TOK_LPAREN evn_param_list_star TOK_RPAREN {
 ;
 
 
-any_event		: TOK_ANY { $$ = new PrimitivePatNode(new EventEntry("any"),nullptr); }/*| TOK_ANY TOK_LPAREN evn_param_list_star TOK_RPAREN*/
+any_event		: TOK_ANY { $$ = new PrimitivePatNode(new EventEntry("any"),nullptr); }
 ;
 
 evn_param_list_star 	: evn_param_list { $$ = $1; }
@@ -464,6 +466,5 @@ base_type		: TOK_VOID { $$ = new Type(Type::TypeTag::VOID); }
 			| TOK_BOOL { $$ = new Type(Type::TypeTag::BOOL); }
 			| TOK_BYTE { $$ = new Type(Type::TypeTag::BYTE); }
 			| TOK_DOUBLE { $$ = new Type(Type::TypeTag::DOUBLE); }
-		/*	| TOK_SHORT { $$ = Type::; }*/
 ;
 %%
