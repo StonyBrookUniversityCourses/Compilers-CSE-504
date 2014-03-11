@@ -1,0 +1,16 @@
+I moved these two lines 
+
+
+if ((n_printed > 0) && (linebreak))
+prtln(os, indent+STEP_INDENT);
+
+
+out of this if
+
+if (leftdelim != '\0') {
+    os << leftdelim;
+}
+
+in SymTab.C to make indentation work.
+
+
