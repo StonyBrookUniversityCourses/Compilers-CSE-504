@@ -146,7 +146,8 @@ void RuleNode::print(ostream& os, int indent) const
     prtSpace(os, indent);
     pat_->print(os,indent);
     os << "-->  ";
-    reaction_->print(os, indent);
+    if(reaction_)
+	reaction_->print(os, indent);
     os << ";";
 }
 
@@ -175,17 +176,21 @@ void PatNode::print(ostream& os, int indent) const
 {
     PatNodeKind pk = kind();
     os << "(";
-    if (pk == BasePatNode::PatNodeKind::NEG)
-	os << "!";
-    pat1_->print(os, indent);
-    if (pk == BasePatNode::PatNodeKind::SEQ)
-	os << ":";
-    else if (pk == BasePatNode::PatNodeKind::STAR)
-	os << "**";
-    else if (pk == BasePatNode::PatNodeKind::OR)
-	os << " \\/ ";
-    if (pat2_) {
-	pat2_->print(os, indent);
+    if (pat1_ == NULL || pk == BasePatNode::PatNodeKind::UNDEFINED) {
+	os << "Unknown event Called";
+    } else {
+	if (pk == BasePatNode::PatNodeKind::NEG)
+	    os << "!";
+	pat1_->print(os, indent);
+	if (pk == BasePatNode::PatNodeKind::SEQ)
+	    os << ":";
+	else if (pk == BasePatNode::PatNodeKind::STAR)
+	    os << "**";
+	else if (pk == BasePatNode::PatNodeKind::OR)
+	    os << " \\/ ";
+	if (pat2_) {
+	    pat2_->print(os, indent);
+	}
     }
     os << ")";
 }
@@ -226,10 +231,12 @@ void CompoundStmtNode::printWithoutBraces(ostream& os, int indent) const
     const std::list<StmtNode*> *stmtList = stmts();
     for (std::list<StmtNode*>::const_iterator it=stmtList->begin();
 	    it != stmtList->end(); ++it) {
-	prtSpace(os, indent);
-	(*it)->print(os, indent);
-	if (stmtNoSemicolonAtEnd(*it))
-	    endln(os, indent);
+	if ((*it) != NULL) {    
+	    prtSpace(os, indent);
+	    (*it)->print(os, indent);
+	    if (stmtNoSemicolonAtEnd(*it))
+		endln(os, indent);
+	}
     }
 }
 
